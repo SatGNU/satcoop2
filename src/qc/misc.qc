@@ -1107,31 +1107,22 @@ void() misc_noisemaker =
 /*SATCOOP func_interact (0 .5 .8) ?
 "target" entity to trigger on interact.
  */
-void(entity e, entity player) func_interact_oninteract;
-void() interact_wait =
-{
-	self.oninteract = func_interact_oninteract;
-	self.think = SUB_Null;
-}
-
-
+.float lastinteracted;
 void(entity e, entity player) func_interact_oninteract =
 {
 	if(!e.target) {
 		return;
 	}
 
+	if(time < e.lastinteracted + e.wait) {
+		return;
+	}
+	e.lastinteracted = time;
+
 	entity oself = self;
 	self = e;
 	SUB_UseTargets();
 	self = oself;
-
-	if (self.wait > 0)
-	{
-		self.oninteract = 0;
-		self.think = interact_wait;
-		self.nextthink = time + self.wait;
-	}
 }
 
 void() func_interact =
