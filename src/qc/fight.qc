@@ -1,24 +1,12 @@
-/*  Copyright (C) 1996-1997  Id Software, Inc.
 
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+/*
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+A monster is in fight mode if it thinks it can effectively attack its
+enemy.
 
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+When it decides it can't attack, it goes into hunt mode.
 
-    See file, 'COPYING', for details.
 */
-
-/*A monster is in fight mode if it thinks it can effectively attack itsenemy.
-When it decides it can't attack, it goes into hunt mode.*/
 
 float(float v) anglemod;
 
@@ -47,24 +35,25 @@ void() knight_attack =
 {
 	local float		len;
 	
-	//decide if now is a good swing time
+// decide if now is a good swing time
 	len = vlen(self.enemy.origin+self.enemy.view_ofs - (self.origin+self.view_ofs));
 	
 	if (len<80)
 		knight_atk1 ();
-	
 	else
 		knight_runatk1 ();
 };
 
 //=============================================================================
 
-/*===========
+/*
+===========
 CheckAttack
 
 The player is in view, so decide to move or launch an attack
 Returns FALSE if movement should continue
-============*/
+============
+*/
 float() CheckAttack =
 {
 	local vector	spot1, spot2;	
@@ -73,7 +62,7 @@ float() CheckAttack =
 
 	targ = self.enemy;
 	
-	// see if any entities are in the way of the shot
+// see if any entities are in the way of the shot
 	spot1 = self.origin + self.view_ofs;
 	spot2 = targ.origin + targ.view_ofs;
 
@@ -91,10 +80,8 @@ float() CheckAttack =
 		{
 			if (self.classname == "monster_knight")
 				knight_attack ();
-
 			else
 				self.th_melee ();
-
 			return TRUE;
 		}
 	}
@@ -114,25 +101,20 @@ float() CheckAttack =
 		chance = 0.9;
 		self.attack_finished = 0;
 	}
-
 	else if (enemy_range == RANGE_NEAR)
 	{
 		if (self.th_melee)
 			chance = 0.2;
-
 		else
 			chance = 0.4;
 	}
-
 	else if (enemy_range == RANGE_MID)
 	{
 		if (self.th_melee)
 			chance = 0.05;
-
 		else
 			chance = 0.1;
 	}
-
 	else
 		chance = 0;
 
@@ -140,7 +122,6 @@ float() CheckAttack =
 	{
 		self.th_missile ();
 		SUB_AttackFinished (2*random());
-
 		return TRUE;
 	}
 
@@ -148,22 +129,26 @@ float() CheckAttack =
 };
 
 
-/*=============
+/*
+=============
 ai_face
 
 Stay facing the enemy
-=============*/
+=============
+*/
 void() ai_face =
 {
 	self.ideal_yaw = vectoyaw(self.enemy.origin - self.origin);
 	ChangeYaw ();
 };
 
-/*=============
+/*
+=============
 ai_charge
 
 The monster is in a melee attack, so get as close as possible to .enemy
-=============*/
+=============
+*/
 float (entity targ) visible;
 float(entity targ) infront;
 float(entity targ) range;
@@ -179,11 +164,12 @@ void() ai_charge_side =
 	local	vector	dtemp;
 	local	float	heading;
 	
-	// aim to the left of the enemy for a flyby
+// aim to the left of the enemy for a flyby
+
 	self.ideal_yaw = vectoyaw(self.enemy.origin - self.origin);
 	ChangeYaw ();
 
-	makevectors2 (self.angles);
+	makevectors (self.angles);
 	dtemp = self.enemy.origin - 30*v_right;
 	heading = vectoyaw(dtemp - self.origin);
 	
@@ -191,10 +177,12 @@ void() ai_charge_side =
 };
 
 
-/*=============
+/*
+=============
 ai_melee
 
-=============*/
+=============
+*/
 void() ai_melee =
 {
 	local vector	delta;
@@ -227,7 +215,6 @@ void() ai_melee_side =
 
 	if (vlen(delta) > 60)
 		return;
-
 	if (!CanDamage (self.enemy, self))
 		return;
 	ldmg = (random() + random() + random()) * 3;
@@ -237,12 +224,14 @@ void() ai_melee_side =
 
 //=============================================================================
 
-/*===========
+/*
+===========
 SoldierCheckAttack
 
 The player is in view, so decide to move or launch an attack
 Returns FALSE if movement should continue
-============*/
+============
+*/
 float() SoldierCheckAttack =
 {
 	local vector	spot1, spot2;	
@@ -251,7 +240,7 @@ float() SoldierCheckAttack =
 
 	targ = self.enemy;
 	
-	// see if any entities are in the way of the shot
+// see if any entities are in the way of the shot
 	spot1 = self.origin + self.view_ofs;
 	spot2 = targ.origin + targ.view_ofs;
 
@@ -273,13 +262,10 @@ float() SoldierCheckAttack =
 		
 	if (enemy_range == RANGE_MELEE)
 		chance = 0.9;
-
 	else if (enemy_range == RANGE_NEAR)
 		chance = 0.4;
-
 	else if (enemy_range == RANGE_MID)
 		chance = 0.05;
-
 	else
 		chance = 0;
 
@@ -287,7 +273,6 @@ float() SoldierCheckAttack =
 	{
 		self.th_missile ();
 		SUB_AttackFinished (1 + random());
-
 		if (random() < 0.3)
 			self.lefty = !self.lefty;
 
@@ -298,12 +283,14 @@ float() SoldierCheckAttack =
 };
 //=============================================================================
 
-/*===========
+/*
+===========
 ShamCheckAttack
 
 The player is in view, so decide to move or launch an attack
 Returns FALSE if movement should continue
-============*/
+============
+*/
 float() ShamCheckAttack =
 {
 	local vector	spot1, spot2;	
@@ -326,7 +313,7 @@ float() ShamCheckAttack =
 		
 	targ = self.enemy;
 	
-	// see if any entities are in the way of the shot
+// see if any entities are in the way of the shot
 	spot1 = self.origin + self.view_ofs;
 	spot2 = targ.origin + targ.view_ofs;
 
@@ -342,25 +329,26 @@ float() ShamCheckAttack =
 	{
 		return FALSE;	// don't have a clear shot
 	}
-
-	// missile attack
+			
+// missile attack
 	if (enemy_range == RANGE_FAR)
 		return FALSE;
 		
 	self.attack_state = AS_MISSILE;
 	SUB_AttackFinished (2 + 2*random());
-
 	return TRUE;
 };
 
 //============================================================================
 
-/*===========
+/*
+===========
 OgreCheckAttack
 
 The player is in view, so decide to move or launch an attack
 Returns FALSE if movement should continue
-============*/
+============
+*/
 float() OgreCheckAttack =
 {
 	local vector	spot1, spot2;	
@@ -384,7 +372,7 @@ float() OgreCheckAttack =
 		
 	targ = self.enemy;
 	
-	// see if any entities are in the way of the shot
+// see if any entities are in the way of the shot
 	spot1 = self.origin + self.view_ofs;
 	spot2 = targ.origin + targ.view_ofs;
 
@@ -397,8 +385,8 @@ float() OgreCheckAttack =
 	{
 		return FALSE;	// don't have a clear shot
 	}
-
-	// missile attack
+			
+// missile attack
 	if (time < self.attack_finished)
 		return FALSE;
 		
@@ -407,16 +395,13 @@ float() OgreCheckAttack =
 		
 	else if (enemy_range == RANGE_NEAR)
 		chance = 0.10;
-
 	else if (enemy_range == RANGE_MID)
 		chance = 0.05;
-
 	else
 		chance = 0;
 
 	self.attack_state = AS_MISSILE;
 	SUB_AttackFinished (1 + 2*random());
-
 	return TRUE;
 };
 

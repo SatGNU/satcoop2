@@ -1,27 +1,11 @@
-/*  Copyright (C) 1996-1997  Id Software, Inc.
 
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-
-    See file, 'COPYING', for details.
-*/
-
-/*==============================================================================
+/*
+==============================================================================
 
 			SOURCE FOR GLOBALVARS_T C STRUCTURE
 
-==============================================================================*/
+==============================================================================
+*/
 
 //
 // system globals
@@ -62,9 +46,9 @@ float		parm1, parm2, parm3, parm4, parm5, parm6, parm7, parm8, parm9, parm10, pa
 
 //
 // global variables set by built in functions
-//	
+//
 vector		v_forward, v_up, v_right;	// set by makevectors()
-	
+
 // set by traceline / tracebox
 float		trace_allsolid;
 float		trace_startsolid;
@@ -193,7 +177,7 @@ void		end_sys_globals;		// flag for structure dumping
 .float		armortype;		// save this fraction of incoming damage
 .float		armorvalue;
 
-.float		waterlevel;		// 0 = not in, 1 = feet, 2 = waist, 3 = eyes
+.float		waterlevel;		// 0 = not in, 1 = feet, 2 = wast, 3 = eyes
 .float		watertype;		// a contents value
 
 .float		ideal_yaw;
@@ -242,6 +226,11 @@ void		end_sys_fields;			// flag for structure dumping
 
 float	FALSE					= 0;
 float 	TRUE					= 1;
+
+// worldtype values
+float	WORLDTYPE_MEDIEVAL		= 0;
+float	WORLDTYPE_METAL			= 1;
+float	WORLDTYPE_BASE			= 2;
 
 // edict.flags
 float	FL_FLY					= 1;
@@ -343,9 +332,10 @@ float	STATE_DOWN		= 3;
 vector	VEC_ORIGIN = '0 0 0';
 vector	VEC_HULL_MIN = '-16 -16 -24';
 vector	VEC_HULL_MAX = '16 16 32';
-
+vector	VEC_HULL_SIZE = '32 32 56';
 vector	VEC_HULL2_MIN = '-32 -32 -24';
 vector	VEC_HULL2_MAX = '32 32 64';
+vector	VEC_HULL2_SIZE = '64 64 88';
 
 // protocol bytes
 float	SVC_TEMPENTITY		= 23;
@@ -372,7 +362,7 @@ float	TE_TELEPORT		= 11;
 
 // sound channels
 // channel 0 never willingly overrides
-// other channels (1-7) allways override a playing sound on that channel
+// other channels (1-7) always override a playing sound on that channel
 float	CHAN_AUTO		= 0;
 float	CHAN_WEAPON		= 1;
 float	CHAN_VOICE		= 2;
@@ -405,6 +395,16 @@ float	MSG_ONE			= 1;		// reliable to one (msg_entity)
 float	MSG_ALL			= 2;		// reliable to all
 float	MSG_INIT		= 3;		// write to the init string
 
+// spawnflags for func_movewall
+float	MOVEWALL_VISIBLE		= 1;
+float	MOVEWALL_TOUCH			= 2;
+float	MOVEWALL_NONBLOCKING	= 4;
+
+// known_release values -- iw
+float	KNOWN_RELEASE_NOT			= 0;
+float	KNOWN_RELEASE_ID1			= 1;
+float	KNOWN_RELEASE_FUNC_MAPJAMX	= 2;
+
 //================================================
 
 //
@@ -414,6 +414,7 @@ float	movedist;
 float	gameover;		// set when a rule exits
 
 string	string_null;	// null string, nothing should be held here
+//float	empty_float;
 
 entity	newmis;			// launch_spike sets this after spawning it
 
@@ -423,6 +424,8 @@ entity	damage_attacker;	// set by T_Damage
 float	framecount;
 
 float		skill;
+
+float	known_release;	// unique id for a release; see values above -- iw
 
 //================================================
 
@@ -513,7 +516,7 @@ float	AS_MISSILE		= 4;
 //
 // doors, etc
 //
-.vector		dest, dest1, dest2;
+.vector		/*dest,*/ dest1, dest2;
 .float		wait;			// time from firing to restarting
 .float		delay;			// time from activation to firing
 .entity		trigger_field;	// door's trigger entity
@@ -531,12 +534,12 @@ float	AS_MISSILE		= 4;
 //
 .float		aflag;
 .float		dmg;			// damage done by door when hit
-	
+
 //
 // misc
 //
 .float		cnt; 			// misc flag
-	
+
 //
 // subs
 //
@@ -560,21 +563,31 @@ float	AS_MISSILE		= 4;
 //
 // sounds
 //
-.float		waitmin, waitmax;
-.float		distance;
+.float		waitmin /*, waitmax*/;
+// .float		distance;
 .float		volume;
 
 
-//additions. --gnounc
-.string		killstring;		//the message a monster or item leaves when it kills you "was mauled by a rottweiler" etc. //gnounc
+//
+// support for item_key_custom -- iw
+//
+.string keyname;
+.float customkeys;
 
-//pitch (angles_x) is inverted in quake due to a bug
-	//use makevectors2 for monsters with nonzero pitch
-//anyone encountering this comment with a better understanding should update the comment to be more informative and useful to modders --gnounc
-void makevectors2(vector ang);		
+
+// variables for enhanced triggering from Custents - dumptruck_ds
+.string target2;		// second target's name
+.string target3;		// third target's name
+.string target4;		// fourth target's name
+.string targetname2;	// second name
+.string targetname3;	// third name
+.string targetname4;	// fourth name
+.string killtarget2;	// second target to kill
+string lastnameused;	// the targetname that was last used to trigger somthing
+
 
 //===========================================================================
-	
+
 
 //
 // builtin functions
@@ -599,7 +612,7 @@ void(entity e) remove				= #15;
 // An entity will also be ignored for testing if forent == test,
 // forent->owner == test, or test->owner == forent
 // a forent of world is ignored
-void(vector v1, vector v2, float nomonsters, entity forent) traceline = #16;	
+void(vector v1, vector v2, float nomonsters, entity forent) traceline = #16;
 
 entity() checkclient				= #17;	// returns a client to look for
 entity(entity start, .string fld, string match) find = #18;
@@ -666,6 +679,28 @@ void(entity e) makestatic		= #69;
 
 void(string var, string val) cvar_set = #72;	// sets cvar.value
 
+// The following function definitions allow the engine's builtin
+// centerprint function (builtin #73) to be called with different
+// numbers of string arguments.  The string that will be printed is the
+// concatenation of the string arguments.
+//
+// These definitions work because builtin #73 is implemented in such
+// a way that it can accept multiple string arguments in this manner,
+// even though the original QuakeC code didn't take advantage of this
+// fact.  A maximum of seven string arguments can be passed because
+// a function is limited to a total of eight arguments (and the first
+// argument is the client).  Note that in the original engine, all of
+// the strings for a centerprint message are concatenated into a single
+// 256-char buffer, therefore excessively long messages should be
+// avoided.  -- iw
+//
+void(entity client, string s1, string s2) centerprint2 = #73;
+void(entity client, string s1, string s2, string s3) centerprint3 = #73;
+void(entity client, string s1, string s2, string s3, string s4) centerprint4 = #73;
+void(entity client, string s1, string s2, string s3, string s4, string s5) centerprint5 = #73;
+void(entity client, string s1, string s2, string s3, string s4, string s5, string s6) centerprint6 = #73;
+void(entity client, string s1, string s2, string s3, string s4, string s5, string s6, string s7) centerprint7 = #73;
+
 void(vector pos, string samp, float vol, float atten) ambientsound = #74;
 
 string(string s) precache_model2	= #75;		// registered version only
@@ -700,6 +735,91 @@ float (entity e, float healamount, float ignore) T_Heal; // health function
 
 float(entity targ, entity inflictor) CanDamage;
 
+void() DummyFunction = //gets rid of the last compiler warnings ; - )
+{
+local string w;
+local float l;
+w = self.wad;
+l = self.light_lev;
+}
+.float is_waiting;	// Supa, triggers, wait until activated before we can trigger?
+.float	gravity; //from custdefs.qc by way of Hipnotic
+// These are required by the Hipnotic code
+//added update stat message
+float SVC_UPDATESTAT = 3;
+//added total monster message
+float STAT_TOTALMONSTERS = 12;
+
+//dumptruck_ds from Rogue eod defs
+
+//
+// elevator fields
+//
+
+.float 		elevatorLastUse;
+.float		elevatorOnFloor;
+.float		elevatorToFloor;
+.vector		elevatorDestination;
+
+//
+// plat2 fields
+//
+.float		plat2Called;
+.float		plat2LastMove;
+.float		plat2GoTime;
+.float		plat2GoTo;
+
+.float		reset_items; //dumptruck_ds
+.float		spawn_angry; //dumptruck_ds
+.string		mdl_debris; //dumptruck_ds
+.float		keep_ammo; //dumptruck_ds
+
+/*============================================================================
+johnfitz new defs from Rubicon2
+============================================================================*/
+float BREAKABLE_NO_MONSTERS = 1;
+
+.float 		wantedgravity; // thanks Spike!
+.float		onladder;
+//.float		ladder_step_finished; //footsteps on ladder no uses -- dumptruck_ds
+
+//dumptruck_ds defs for breakables in rubcon2.qc -- thanks to Qmaster and the Arcane Dimensions team
+/*
+.string break_template1_e;
+.string break_template2_e;
+.string break_template3_e;
+.string break_template4_e;
+.string break_template5_e;
+.string find_brk_template_model;
+*/
+//from remakequake -- dumptruck_ds
+
+.vector		dest, dest1, dest2;
+
+void(string type, string text) print_self =
+{
+	dprint (type);
+	dprint (" '");
+	dprint (self.classname);
+	dprint ("' ");
+	dprint (text);
+	dprint (" at ");
+	dprint (vtos(self.origin));
+	dprint ("\n");
+};
+
+void() monster_pain_use; //dumptruck_ds
+void() SUB_UsePain; //dumptruck_ds
+.float 		pain_threshold; //dumptruck_ds
+.string 	pain_target; //dumptruck_ds
+.float color; //Hipnotic
+.float megahealth_rottime; // dumptruck_ds
+.float alpha; // from RennyC func_fall in dtmisc.qc
+.float		ltrailLastUsed;  //from DOE lighnin
+.float style2; //c0burn's switchable lights
+.float sight_trigger; //dumptruck_ds
+.float keep_ammo; //dumptruck_ds
+.float berserk; //dumptruck_ds
 
 /* ==== SATCOOP ==== */
 .void(entity e, entity player) oninteract;

@@ -1,23 +1,5 @@
-/*  Copyright (C) 1996-1997  Id Software, Inc.
 
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-
-    See file, 'COPYING', for details.
-*/
-
-entity s;
+entity	s;
 
 
 void() trigger_reactivate =
@@ -60,22 +42,21 @@ void() multi_trigger =
 		WriteByte (MSG_ALL, SVC_FOUNDSECRET);
 	}
 
-	if (self.noise != string_null)
+	if (self.noise != "")
 		sound (self, CHAN_VOICE, self.noise, 1, ATTN_NORM);
 
 // don't trigger again until reset
 	self.takedamage = DAMAGE_NO;
 
 	activator = self.enemy;
-	
+
 	SUB_UseTargets();
 
-	if (self.wait > 0)	
+	if (self.wait > 0)
 	{
 		self.think = multi_wait;
 		self.nextthink = time + self.wait;
 	}
-
 	else
 	{	// we can't just remove (self) here, because this is a touch function
 		// called wheil C code is looping through area links...
@@ -85,31 +66,50 @@ void() multi_trigger =
 	}
 };
 
-void() multi_killed =
+void() multi_killed = //dumptruck_ds
 {
+	if (self.is_waiting)	// Supa, restore health and do nothing if we're still waiting to be activated
+	{
+		self.health		= self.max_health;	// nyah nyah~!
+		self.takedamage	= DAMAGE_YES;
+		self.solid		= SOLID_BBOX;
+
+		return;
+	}
+
 	self.enemy = damage_attacker;
 	multi_trigger();
 };
 
-void() multi_use =
+void() multi_use = //dumptruck_ds
 {
+	if (self.is_waiting)	// Supa, if this trigger is waiting to be activated we'll tell it to get ready!
+	{
+		self.is_waiting = FALSE;	// Get ready!
+
+		return;	// Must be used or triggered again to do anything
+	}
+
 	self.enemy = activator;
 	multi_trigger();
 };
 
-void() multi_touch =
+void() multi_touch = //dumptruck_ds
 {
 	if (other.classname != "player")
 		return;
-	
-	// if the trigger has an angles field, check player's facing direction
+
+	if (self.is_waiting)	// Supa, is this trigger waiting to be activated?
+		return;
+
+// if the trigger has an angles field, check player's facing direction
 	if (self.movedir != '0 0 0')
 	{
-		makevectors2 (other.angles);
+		makevectors (other.angles);
 		if (v_forward * self.movedir < 0)
 			return;		// not facing the right way
 	}
-	
+
 	self.enemy = other;
 	multi_trigger ();
 };
@@ -126,30 +126,42 @@ sounds
 3)	large switch
 4)
 set "message" to text string
+"is_waiting" : If set to 1, this trigger will do nothing until another trigger activates it
 */
 void() trigger_multiple =
 {
+	if (SUB_Inhibit ())  // new spawnflags for all entities -- iw
+		return;
+
+	if (self.is_waiting)
+	{
+		dprint("Spawned a waiting ");
+		dprint(self.classname);
+		dprint(" with targetname ");
+		dprint(self.targetname);
+		dprint(" and target ");
+		dprint(self.target);
+		dprint("\n");
+	}
+
 	if (self.sounds == 1)
 	{
 		precache_sound ("misc/secret.wav");
 		self.noise = "misc/secret.wav";
 	}
-
 	else if (self.sounds == 2)
 	{
 		precache_sound ("misc/talk.wav");
 		self.noise = "misc/talk.wav";
 	}
-
 	else if (self.sounds == 3)
 	{
 		precache_sound ("misc/trigger1.wav");
 		self.noise = "misc/trigger1.wav";
 	}
-	
+
 	if (!self.wait)
 		self.wait = 0.2;
-
 	self.use = multi_use;
 
 	InitTrigger ();
@@ -158,7 +170,6 @@ void() trigger_multiple =
 	{
 		if (self.spawnflags & SPAWNFLAG_NOTOUCH)
 			objerror ("health and notouch don't make sense\n");
-
 		self.max_health = self.health;
 		self.th_die = multi_killed;
 		self.takedamage = DAMAGE_YES;
@@ -190,6 +201,9 @@ set "message" to text string
 */
 void() trigger_once =
 {
+	if (SUB_Inhibit ())  // new spawnflags for all entities -- iw
+		return;
+
 	self.wait = -1;
 	trigger_multiple();
 };
@@ -201,6 +215,9 @@ This fixed size trigger cannot be touched, it can only be fired by other events.
 */
 void() trigger_relay =
 {
+	if (SUB_Inhibit ())  // new spawnflags for all entities -- iw
+		return;
+
 	self.use = SUB_UseTargets;
 };
 
@@ -218,15 +235,16 @@ set "message" to text string
 */
 void() trigger_secret =
 {
+	if (SUB_Inhibit ())  // new spawnflags for all entities -- iw
+		return;
+
 	total_secrets = total_secrets + 1;
 	self.wait = -1;
-
 	if (!self.message)
 		self.message = "You found a secret area!";
-
 	if (!self.sounds)
 		self.sounds = 1;
-	
+
 	if (self.sounds == 1)
 	{
 		precache_sound ("misc/secret.wav");
@@ -247,33 +265,29 @@ void() trigger_secret =
 void() counter_use =
 {
 	self.count = self.count - 1;
-
 	if (self.count < 0)
 		return;
-	
+
 	if (self.count != 0)
 	{
-		if (activator.classname == "player" && (self.spawnflags & SPAWNFLAG_NOMESSAGE) == 0)
+		if (activator.classname == "player"
+		&& (self.spawnflags & SPAWNFLAG_NOMESSAGE) == 0)
 		{
 			if (self.count >= 4)
 				centerprint (activator, "There are more to go...");
-
 			else if (self.count == 3)
 				centerprint (activator, "Only 3 more to go...");
-
 			else if (self.count == 2)
 				centerprint (activator, "Only 2 more to go...");
-
 			else
 				centerprint (activator, "Only 1 more to go...");
 		}
-
 		return;
 	}
-	
-	if (activator.classname == "player" && (self.spawnflags & SPAWNFLAG_NOMESSAGE) == 0)
-		centerprint(activator, "Sequence completed!");
 
+	if (activator.classname == "player"
+	&& (self.spawnflags & SPAWNFLAG_NOMESSAGE) == 0)
+		centerprint(activator, "Sequence completed!");
 	self.enemy = activator;
 	multi_trigger ();
 };
@@ -287,14 +301,15 @@ After the counter has been triggered "count" times (default 2), it will fire all
 */
 void() trigger_counter =
 {
-	self.wait = -1;
+	if (SUB_Inhibit ())  // new spawnflags for all entities -- iw
+		return;
 
+	self.wait = -1;
 	if (!self.count)
 		self.count = 2;
 
 	self.use = counter_use;
 };
-
 
 /*
 ==============================================================================
@@ -313,19 +328,14 @@ void() play_teleport =
 	local	string tmpstr;
 
 	v = random() * 5;
-
 	if (v < 1)
 		tmpstr = "misc/r_tele1.wav";
-
 	else if (v < 2)
 		tmpstr = "misc/r_tele2.wav";
-
 	else if (v < 3)
 		tmpstr = "misc/r_tele3.wav";
-
 	else if (v < 4)
 		tmpstr = "misc/r_tele4.wav";
-
 	else
 		tmpstr = "misc/r_tele5.wav";
 
@@ -358,13 +368,12 @@ void() tdeath_touch =
 	{
 		if (other.invincible_finished > time)
 			self.classname = "teledeath2";
-
 		if (self.owner.classname != "player")
 		{	// other monsters explode themselves
 			T_Damage (self.owner, self, self, 50000);
 			return;
 		}
-		
+
 	}
 
 	if (other.health)
@@ -376,7 +385,7 @@ void() tdeath_touch =
 
 void(vector org, entity death_owner) spawn_tdeath =
 {
-	local entity	death;
+local entity	death;
 
 	death = spawn();
 	death.classname = "teledeath";
@@ -389,16 +398,16 @@ void(vector org, entity death_owner) spawn_tdeath =
 	death.nextthink = time + 0.2;
 	death.think = SUB_Remove;
 	death.owner = death_owner;
-	
+
 	force_retouch = 2;		// make sure even still objects get hit
 };
 
 void() teleport_touch =
 {
-	local entity	t;
-	local vector	org;
+local entity	t;
+local vector	org;
 
-	if (self.targetname != string_null)
+	if (self.targetname != "")
 	{
 		if (self.nextthink < time)
 		{
@@ -412,28 +421,39 @@ void() teleport_touch =
 			return;
 	}
 
-	// only teleport living creatures
+	if (self.is_waiting == TRUE)	// Supa, is this trigger waiting to be activated?
+		return;
+
+	if (self.is_waiting != -1)	// Special case
+	if (self.targetname != "")
+	{
+		if (self.nextthink < time)
+		{
+			return;		// not fired yet
+		}
+	}
+
+// only teleport living creatures
 	if (other.health <= 0 || other.solid != SOLID_SLIDEBOX)
 		return;
 
 	SUB_UseTargets ();
 
-	// put a tfog where the player was
+// put a tfog where the player was
 	spawn_tfog (other.origin);
 
 	t = find (world, targetname, self.target);
-
 	if (!t)
 		objerror ("couldn't find target");
 
-	// spawn a tfog flash in front of the destination
+// spawn a tfog flash in front of the destination
 	makevectors (t.mangle);
 	org = t.origin + 32 * v_forward;
 
 	spawn_tfog (org);
 	spawn_tdeath(t.origin, other);
 
-	// move the player and lock him down for a little while
+// move the player and lock him down for a little while
 	if (!other.health)
 	{
 		other.origin = t.origin;
@@ -443,18 +463,14 @@ void() teleport_touch =
 
 	setorigin (other, t.origin);
 	other.angles = t.mangle;
-
 	if (other.classname == "player")
 	{
 		other.fixangle = 1;		// turn this way immediately
 		other.teleport_time = time + 0.7;
-
 		if (other.flags & FL_ONGROUND)
 			other.flags = other.flags - FL_ONGROUND;
-
 		other.velocity = v_forward * 300;
 	}
-
 	other.flags = other.flags - other.flags & FL_ONGROUND;
 };
 
@@ -463,18 +479,27 @@ This is the destination marker for a teleporter.  It should have a "targetname" 
 */
 void() info_teleport_destination =
 {
-	// this does nothing, just serves as a target spot
+	if (SUB_Inhibit ())  // new spawnflags for all entities -- iw
+		return;
+
+// this does nothing, just serves as a target spot
 	self.mangle = self.angles;
 	self.angles = '0 0 0';
-	self.model = string_null;
+	self.model = "";
 	self.origin = self.origin + '0 0 27';
-
 	if (!self.targetname)
 		objerror ("no targetname");
 };
 
 void() teleport_use =
 {
+	if (self.is_waiting)	// Supa, if this trigger is waiting to be activated we'll tell it to get ready!
+	{
+		self.is_waiting = -1;	// Special case to tell teleport_touch to ignore the usual targetname->nextthink check
+
+		return;	// Must be used or triggered again to do anything
+	}
+
 	self.nextthink = time + 0.2;
 	force_retouch = 2;		// make sure even still objects get hit
 	self.think = SUB_Null;
@@ -487,12 +512,14 @@ If the trigger_teleport has a targetname, it will only teleport entities when it
 */
 void() trigger_teleport =
 {
+	if (SUB_Inhibit ())  // new spawnflags for all entities -- iw
+		return;
+
 	local vector o;
 
 	InitTrigger ();
 	self.touch = teleport_touch;
-
-	// find the destination 
+	// find the destination
 	if (!self.target)
 		objerror ("no target");
 	self.use = teleport_use;
@@ -517,7 +544,7 @@ void() trigger_skill_touch =
 {
 	if (other.classname != "player")
 		return;
-		
+
 	cvar_set ("skill", self.message);
 };
 
@@ -527,6 +554,9 @@ Only used on start map.
 */
 void() trigger_setskill =
 {
+	if (SUB_Inhibit ())  // new spawnflags for all entities -- iw
+		return;
+
 	InitTrigger ();
 	self.touch = trigger_skill_touch;
 };
@@ -544,21 +574,19 @@ void() trigger_onlyregistered_touch =
 {
 	if (other.classname != "player")
 		return;
-
 	if (self.attack_finished > time)
 		return;
 
 	self.attack_finished = time + 2;
-
 	if (cvar("registered"))
 	{
-		self.message = string_null;
+		self.message = "";
 		SUB_UseTargets ();
 		remove (self);
 	}
 	else
 	{
-		if (self.message != string_null)
+		if (self.message != "")
 		{
 			centerprint (other, self.message);
 			sound (other, CHAN_BODY, "misc/talk.wav", 1, ATTN_NORM);
@@ -571,6 +599,9 @@ Only fires if playing the registered version, otherwise prints the message
 */
 void() trigger_onlyregistered =
 {
+	if (SUB_Inhibit ())  // new spawnflags for all entities -- iw
+		return;
+
 	precache_sound ("misc/talk.wav");
 	InitTrigger ();
 	self.touch = trigger_onlyregistered_touch;
@@ -586,9 +617,9 @@ void() hurt_on =
 
 void() hurt_touch =
 {
-	if (other.takedamage)
+	if (other.takedamage && self.nextthink < time)
 	{
-		self.solid = SOLID_NOT;
+		//self.solid = SOLID_NOT;
 		T_Damage (other, self, self, self.dmg);
 		self.think = hurt_on;
 		self.nextthink = time + 1;
@@ -604,53 +635,138 @@ defalt dmg = 5
 */
 void() trigger_hurt =
 {
+	if (SUB_Inhibit ())  // new spawnflags for all entities -- iw
+		return;
+
 	InitTrigger ();
 	self.touch = hurt_touch;
-
 	if (!self.dmg)
 		self.dmg = 5;
 };
 
 //============================================================================
 
+//////////////////////////////////////////////////////////////////////////////
+// start dumptruck_ds additions //////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+
 float PUSH_ONCE = 1;
+float DT_STARTOFF = 8;  // trigger will start off
+float DT_SILENT = 16; // push silently
+float DT_NOISE = 32; // use custom sound using noise key/value
 
 void() trigger_push_touch =
 {
+	if (self.is_waiting) return;
 	if (other.classname == "grenade")
 		other.velocity = self.speed * self.movedir * 10;
-
 	else if (other.health > 0)
 	{
 		other.velocity = self.speed * self.movedir * 10;
-
 		if (other.classname == "player")
+		if (!(self.spawnflags & DT_SILENT))
 		{
 			if (other.fly_sound < time)
+			if (!(self.spawnflags & DT_NOISE))
 			{
 				other.fly_sound = time + 1.5;
 				sound (other, CHAN_AUTO, "ambience/windfly.wav", 1, ATTN_NORM);
 			}
+			else
+			{
+			other.fly_sound = time + 1.5;
+			sound (other, CHAN_AUTO, self.noise, 1, ATTN_NORM);
+			}
 		}
 	}
-
 	if (self.spawnflags & PUSH_ONCE)
 		remove(self);
 };
 
+// void() trigger_push_use =      //dumptruck_ds
+// {
+//   self.is_waiting = !self.is_waiting;
+// }
 
 /*QUAKED trigger_push (.5 .5 .5) ? PUSH_ONCE
 Pushes the player
 */
-void() trigger_push =
+void() trigger_push = //dumptruck_ds
 {
+	if (SUB_Inhibit ())  // new spawnflags for all entities -- iw
+		return;
+
 	InitTrigger ();
 	precache_sound ("ambience/windfly.wav");
+	// if (self.targetname)
+	// {               // digs 31.03.2012
+	// 	self.is_waiting = TRUE;
+	// 	self.use = trigger_push_use;
+	// }
+	// else self.is_waiting = FALSE;
 	self.touch = trigger_push_touch;
 
 	if (!self.speed)
 		self.speed = 1000;
 };
+
+void() push_toggle = //dumptruck_ds based on hipnotic blocker_use
+
+{
+if ( !self.state )
+	{
+		self.state = 1;
+	setorigin( self, self.origin - '8000 8000 8000');
+	}
+else
+	{
+		self.state = 0;
+	setorigin( self, self.origin + '8000 8000 8000');
+	}
+};
+
+/*QUAKED trigger_push_custom (.5 .5 .5) ? PUSH_ONCE DT_STARTOFF DT_SILENT
+
+dumptruck_ds
+
+trigger_push_custom is a new entity. This can be used to create traps,
+jumppads, currents in water and more.
+
+If DT_STARTOFF flag is set, this moves the trigger
+brush out of the playable area. This can be targeted
+and toggled off and on. If the DT_SILENT flag is set it
+won't make the windfly sound. Use DT_CUSTOM spawnflag
+and the noise key/value to use a custom push sound. Custom
+sounds should be "one off" sounds NOT be looping.
+
+Adapted from Hipnotic's func_togglewall */
+
+void() trigger_push_custom =
+{
+	if (SUB_Inhibit ())  // new spawnflags for all entities -- iw
+		return;
+
+	InitTrigger();
+	self.use = push_toggle;
+	self.touch = trigger_push_touch;
+	if ( self.spawnflags & DT_STARTOFF )
+		 {
+		 self.state = 0;
+		 setorigin( self, self.origin + '8000 8000 8000' );
+		 }
+	else
+		{
+		 self.state = 1;
+	 	}
+	if ( self.noise != "" )
+    {
+    precache_sound( self.noise );
+	  }
+		if (!self.speed)
+			self.speed = 1000;
+
+};
+
 
 //============================================================================
 
@@ -659,13 +775,13 @@ void() trigger_monsterjump_touch =
 	if ( other.flags & (FL_MONSTER | FL_FLY | FL_SWIM) != FL_MONSTER )
 		return;
 
-	// set XY even if not on ground, so the jump will clear lips
+// set XY even if not on ground, so the jump will clear lips
 	other.velocity_x = self.movedir_x * self.speed;
 	other.velocity_y = self.movedir_y * self.speed;
-	
+
 	if ( !(other.flags & FL_ONGROUND) )
 		return;
-	
+
 	other.flags = other.flags - FL_ONGROUND;
 
 	other.velocity_z = self.height;
@@ -675,18 +791,198 @@ void() trigger_monsterjump_touch =
 Walking monsters that touch this will jump in the direction of the trigger's angle
 "speed" default to 200, the speed thrown forward
 "height" default to 200, the speed thrown upwards
+
+If DT_STARTOFF flag is set, this moves the trigger
+brush out of the playable area. This can be targeted
+and toggled off and on.
 */
 void() trigger_monsterjump =
 {
+	if (SUB_Inhibit ())  // new spawnflags for all entities -- iw
+		return;
+
+	self.use = push_toggle;
+	if ( self.spawnflags & DT_STARTOFF ) // dumptruck_ds
+		 {
+		 self.state = 0;
+		 setorigin( self, self.origin + '8000 8000 8000' );
+		 }
+	else
+		{
+		 self.state = 1;
+	 	}
 	if (!self.speed)
 		self.speed = 200;
-
 	if (!self.height)
 		self.height = 200;
-
 	if (self.angles == '0 0 0')
 		self.angles = '0 360 0';
-
 	InitTrigger ();
 	self.touch = trigger_monsterjump_touch;
+};
+//////////////////////////////////////////////////////////////////////////////
+// end dumptruck_ds additions //////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+
+//This is necros' trigger_void from Lost Chapters pack, modified by dumptruck_ds
+
+float 	MONSTER_SAFE = 1;
+float 	PLAYER_SAFE = 2;
+
+void() trigger_void_touch =
+{
+	if (self.spawnflags & MONSTER_SAFE && other.flags & FL_MONSTER) return; //ignore monsters
+	if (self.spawnflags & PLAYER_SAFE && other.flags & FL_CLIENT) return; // ignore players
+
+	if (other.takedamage)
+	{
+		other.invincible_finished = 0; // kills even with Pentagram, this took forever to figure out!! -- dumptruck_ds
+		T_Damage (other, self, self, other.health + 1000 /*, DTH_TRIGGER_VOID, 1, 1*/);
+
+		if (other.flags & FL_MONSTER)
+		remove(other);
+	}
+
+	if (other.classname == "gib" ||
+	other.classname == "grenade" ||
+	other.classname == "spike" ||
+	other.classname == "missile")
+	remove(other);
+
+	if (other.flags & FL_ITEM)
+	remove(other);
+
+	force_retouch = 2;
+};
+
+/*QUAKED trigger_void (.5 .5 .5) ?
+Use this for a 'void' area.  removes monsters, gibs, ammo, etc...  also kills player.
+*/
+void() trigger_void =
+{
+	if (SUB_Inhibit ())  // new spawnflags for all entities -- iw
+		return;
+
+	InitTrigger ();
+	self.touch = trigger_void_touch;
+};
+
+/*==============================================================================
+GIVE AND TAKE STUFF (WIP)
+
+This is Axe only at the moment. Need to research removing all weapons.
+==============================================================================*/
+
+void() take_weapon_use =  //thanks to ShanJaq and Spike for their help on this.
+
+{
+	if (!(other.flags & FL_CLIENT))
+	return;
+
+		{
+			multi_trigger();
+			other.items &= ~IT_SHOTGUN;
+			other.currentammo = !other.ammo_shells;
+			other.ammo_shells = !other.ammo_shells;
+			other.items = other.items - ( other.items & IT_SHELLS);
+			W_SetCurrentAmmo();
+			W_BestWeapon();
+		}
+/*
+	if (self.spawnflags & 8)
+
+		{
+			multi_trigger();
+			other.items &= ~IT_SUPER_SHOTGUN;
+			other.currentammo = !other.ammo_shells;
+			other.ammo_shells = !other.ammo_shells;
+			other.items = other.items - ( other.items & IT_SHELLS);
+			W_SetCurrentAmmo();
+			W_BestWeapon();
+		}
+
+	if (self.spawnflags & 16)
+
+		{
+			multi_trigger();
+			other.items &= ~IT_NAILGUN;
+			other.currentammo = !other.ammo_nails;
+			other.ammo_nails = !other.ammo_nails;
+			other.items = other.items - ( other.items & IT_NAILS);
+			W_SetCurrentAmmo();
+			W_BestWeapon();
+		}
+
+	if (self.spawnflags & 32)
+
+		{
+			multi_trigger();
+			other.items &= ~IT_SUPER_NAILGUN;
+			other.currentammo = !other.ammo_nails;
+			other.ammo_nails = !other.ammo_nails;
+			other.items = other.items - ( other.items & IT_NAILS);
+			W_SetCurrentAmmo();
+			W_BestWeapon();
+		}
+
+	if (self.spawnflags & 64)
+
+		{
+			multi_trigger();
+			other.items &= ~IT_GRENADE_LAUNCHER;
+			other.currentammo = !other.ammo_rockets;
+			// if (!self.keep_ammo)
+			// {
+					// other.ammo_rockets = !other.ammo_rockets;
+			// 		other.items = other.items - ( other.items & IT_ROCKETS);
+			// 		W_SetCurrentAmmo();
+			// }
+			// else W_BestWeapon();
+			W_BestWeapon();
+			dprint ("best weapon 64\n");
+		}
+
+	if (self.spawnflags & 128)
+
+		{
+			multi_trigger();
+			other.items &= ~IT_ROCKET_LAUNCHER;
+			other.currentammo = !other.ammo_rockets;
+			// if (!self.keep_ammo)
+			// {
+			// 		other.ammo_rockets = !other.ammo_rockets;
+			// 		other.items = other.items - ( other.items & IT_ROCKETS);
+			// 		W_SetCurrentAmmo();
+			// }
+			// else W_BestWeapon();
+			W_BestWeapon();
+			dprint ("best weapon 128\n");
+
+		}
+
+	if (self.spawnflags & 256)
+
+		{
+			multi_trigger();
+			other.items &= ~IT_LIGHTNING;
+			other.currentammo = !other.ammo_cells;
+			other.ammo_cells = !other.ammo_cells;
+			other.items = other.items - ( other.items & IT_CELLS);
+			W_SetCurrentAmmo();
+			W_BestWeapon();
+		}
+*/
+};
+/*QUAKED trigger_take_weapon (.5 .5 .5) ?
+
+Removes shotgun upon touch.
+*/
+void() trigger_take_weapon =
+{
+	if (SUB_Inhibit ())  // new spawnflags for all entities -- iw
+		return;
+
+	self.wait = -1;
+	trigger_multiple();
+	self.touch = take_weapon_use;
 };

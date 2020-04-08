@@ -1,21 +1,3 @@
-/*  Copyright (C) 1996-1997  Id Software, Inc.
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-
-    See file, 'COPYING', for details.
-*/
 
 
 void() plat_center_touch;
@@ -33,32 +15,30 @@ void() plat_spawn_inside_trigger =
 
 //
 // middle trigger
-//	
+//
 	trigger = spawn();
 	trigger.touch = plat_center_touch;
 	trigger.movetype = MOVETYPE_NONE;
 	trigger.solid = SOLID_TRIGGER;
 	trigger.enemy = self;
-	
+
 	tmin = self.mins + '25 25 0';
 	tmax = self.maxs - '25 25 -8';
 	tmin_z = tmax_z - (self.pos1_z - self.pos2_z + 8);
-
 	if (self.spawnflags & PLAT_LOW_TRIGGER)
 		tmax_z = tmin_z + 8;
-	
+
 	if (self.size_x <= 50)
 	{
 		tmin_x = (self.mins_x + self.maxs_x) / 2;
 		tmax_x = tmin_x + 1;
 	}
-
 	if (self.size_y <= 50)
 	{
 		tmin_y = (self.mins_y + self.maxs_y) / 2;
 		tmax_y = tmin_y + 1;
 	}
-	
+
 	setsize (trigger, tmin, tmax);
 };
 
@@ -94,15 +74,13 @@ void() plat_center_touch =
 {
 	if (other.classname != "player")
 		return;
-		
+
 	if (other.health <= 0)
 		return;
 
 	self = self.enemy;
-
 	if (self.state == STATE_BOTTOM)
 		plat_go_up ();
-
 	else if (self.state == STATE_TOP)
 		self.nextthink = self.ltime + 1;	// delay going down
 };
@@ -114,9 +92,9 @@ void() plat_outside_touch =
 
 	if (other.health <= 0)
 		return;
-		
-	self = self.enemy;
 
+//dprint ("plat_outside_touch\n");
+	self = self.enemy;
 	if (self.state == STATE_TOP)
 		plat_go_down ();
 };
@@ -125,22 +103,20 @@ void() plat_trigger_use =
 {
 	if (self.think)
 		return;		// allready activated
-
 	plat_go_down();
 };
 
 
 void() plat_crush =
 {
+//dprint ("plat_crush\n");
 
 	T_Damage (other, self, self, 1);
-	
+
 	if (self.state == STATE_UP)
 		plat_go_down ();
-
 	else if (self.state == STATE_DOWN)
 		plat_go_up ();
-
 	else
 		objerror ("plat_crush: bad self.state\n");
 };
@@ -148,10 +124,8 @@ void() plat_crush =
 void() plat_use =
 {
 	self.use = SUB_Null;
-
 	if (self.state != STATE_UP)
 		objerror ("plat_use: not in up state");
-
 	plat_go_down();
 };
 
@@ -172,9 +146,11 @@ Set "sounds" to one of the following:
 
 void() func_plat =
 {
+	if (SUB_Inhibit ())  // new spawnflags for all entities -- iw
+		return;
+
 	if (!self.t_length)
 		self.t_length = 80;
-
 	if (!self.t_width)
 		self.t_width = 10;
 
@@ -205,35 +181,31 @@ void() func_plat =
 	self.classname = "plat";
 	self.solid = SOLID_BSP;
 	self.movetype = MOVETYPE_PUSH;
-	setorigin (self, self.origin);	
+	setorigin (self, self.origin);
 	setmodel (self, self.model);
 	setsize (self, self.mins , self.maxs);
 
 	self.blocked = plat_crush;
-
 	if (!self.speed)
 		self.speed = 150;
 
-	// pos1 is the top position, pos2 is the bottom
+// pos1 is the top position, pos2 is the bottom
 	self.pos1 = self.origin;
 	self.pos2 = self.origin;
-
 	if (self.height)
 		self.pos2_z = self.origin_z - self.height;
-
 	else
 		self.pos2_z = self.origin_z - self.size_z + 8;
 
 	self.use = plat_trigger_use;
 
-	plat_spawn_inside_trigger ();	// the "start moving" trigger	
+	plat_spawn_inside_trigger ();	// the "start moving" trigger
 
-	if (self.targetname != string_null)
+	if (self.targetname != "")
 	{
 		self.state = STATE_UP;
 		self.use = plat_use;
 	}
-
 	else
 	{
 		setorigin (self, self.pos2);
@@ -242,38 +214,67 @@ void() func_plat =
 };
 
 //============================================================================
+//re-triggered trains from Rubicon 2 - dumptruck_ds
+//============================================================================
 
 void() train_next;
 void() func_train_find;
+
+float TRAIN_RETRIGGER = 1; //johnfitz -- retriggerable trains
 
 void() train_blocked =
 {
 	if (time < self.attack_finished)
 		return;
-
 	self.attack_finished = time + 0.5;
 	T_Damage (other, self, self, self.dmg);
 };
-
 void() train_use =
 {
+	//johnfitz -- retriggerable trains
+	if (self.spawnflags & TRAIN_RETRIGGER) {
+		train_next();
+		return;
+	}
+	//johnfitz
+
 	if (self.think != func_train_find)
 		return;		// already activated
-
 	train_next();
 };
 
+//johnfitz
+void() train_moving_use =
+{
+	//still moving, so save it for later
+	self.cnt = self.cnt + 1;
+}
+//johnfitz
+
 void() train_wait =
 {
+	//johnfitz -- retriggerable trains
+	if (self.spawnflags & TRAIN_RETRIGGER) {
+		if (self.cnt > 0) { //triggered early, so continue now
+			self.cnt = self.cnt - 1;
+			self.nextthink = self.ltime + 0.1;
+			self.think = train_next;
+			return;
+		}
+		self.use = train_use; //ready to be re-triggered
+		sound (self, CHAN_VOICE, self.noise, 1, ATTN_NORM); //play stopping sound
+		return;
+	}
+	//johnfitz
+
 	if (self.wait)
 	{
 		self.nextthink = self.ltime + self.wait;
 		sound (self, CHAN_VOICE, self.noise, 1, ATTN_NORM);
 	}
-
 	else
 		self.nextthink = self.ltime + 0.1;
-	
+
 	self.think = train_next;
 };
 
@@ -281,18 +282,20 @@ void() train_next =
 {
 	local entity	targ;
 
+	//johnfitz -- retriggerable trains
+	if (self.spawnflags & TRAIN_RETRIGGER) {
+		self.use = train_moving_use; //store up any premature triggerings until current movement is finished
+	}
+	//johnfitz
+
 	targ = find (world, targetname, self.target);
 	self.target = targ.target;
-
 	if (!self.target)
 		objerror ("train_next: no next target");
-
 	if (targ.wait)
 		self.wait = targ.wait;
-
 	else
 		self.wait = 0;
-
 	sound (self, CHAN_VOICE, self.noise1, 1, ATTN_NORM);
 	SUB_CalcMove (targ.origin - self.mins, self.speed, train_wait);
 };
@@ -305,7 +308,6 @@ void() func_train_find =
 	targ = find (world, targetname, self.target);
 	self.target = targ.target;
 	setorigin (self, targ.origin - self.mins);
-
 	if (!self.targetname)
 	{	// not triggered, so start immediately
 		self.nextthink = self.ltime + 0.1;
@@ -313,25 +315,47 @@ void() func_train_find =
 	}
 };
 
-/*QUAKED func_train (0 .5 .8) ?
+/*QUAKED func_train (0 .5 .8) ? RETRIGGER
 Trains are moving platforms that players can ride.
 The targets origin specifies the min point of the train at each corner.
 The train spawns at the first target it is pointing at.
 If the train is the target of a button or trigger, it will not begin moving until activated.
+
+RETRIGGER: stop at each path_corner and don't resume until triggered again (ignores wait time)
+
 speed	default 100
 dmg		default	2
+noise path to custom sound
 sounds
 1) ratchet metal
+2) base
+3) custom
 
 */
 void() func_train =
-{	
+{
+	if (SUB_Inhibit ())  // new spawnflags for all entities -- iw
+		return;
+
+// Some of the stock id1 maps (at least e2m7, e3m3, and e3m6) contain
+// one or more func_train entities which have spawnflag 1 erroneously
+// set.  In the id1 progs.dat, spawnflag 1 didn't do anything, but in
+// progs_dump it does: it's the "RETRIGGER" spawnflag.  So, if one of
+// the id1 maps is being played, we clear this spawnflag to maintain the
+// original behavior.  -- iw
+//
+	if (known_release == KNOWN_RELEASE_ID1 &&
+			(self.spawnflags & TRAIN_RETRIGGER))
+	{
+		dprint ("WARNING: progs.dat sanitized 'RETRIGGER' spawnflag of func_train\n");
+		self.spawnflags = self.spawnflags -
+				(self.spawnflags & TRAIN_RETRIGGER);
+	}
+
 	if (!self.speed)
 		self.speed = 100;
-
 	if (!self.target)
 		objerror ("func_train without a target");
-
 	if (!self.dmg)
 		self.dmg = 2;
 
@@ -351,7 +375,27 @@ void() func_train =
 		precache_sound ("plats/train1.wav");
 	}
 
-	self.cnt = 1;
+	//johnfitz -- more sounds
+	if (self.sounds == 2)
+	{
+		self.noise = "doors/hydro2.wav";
+		precache_sound ("doors/hydro2.wav");
+		self.noise1 = "doors/hydro1.wav";
+		precache_sound ("doors/hydro1.wav");
+	}
+
+	if (self.sounds == 3) //custom sounds -- dumptruck_ds
+	{
+		self.noise = self.noise3;  //stop sound
+		precache_sound (self.noise3);
+		self.noise1 = self.noise4; //sound in motion
+		precache_sound (self.noise4);
+	}
+
+	//johnfitz
+
+	self.cnt = 0; //johnfitz -- used to store premature trigger events when TRAIN_RETRIGGER is set
+
 	self.solid = SOLID_BSP;
 	self.movetype = MOVETYPE_PUSH;
 	self.blocked = train_blocked;
@@ -362,43 +406,129 @@ void() func_train =
 	setsize (self, self.mins , self.maxs);
 	setorigin (self, self.origin);
 
-	// start trains on the second frame, to make sure their targets have had
-	// a chance to spawn
+// start trains on the second frame, to make sure their targets have had
+// a chance to spawn
 	self.nextthink = self.ltime + 0.1;
 	self.think = func_train_find;
 };
 
-/*QUAKED misc_teleporttrain (0 .5 .8) (-8 -8 -8) (8 8 8)
-This is used for the final bos
+//Code for the fixed teleporttrain written by c0burn and modified by ZungryWare
+void() teleporttrain_calcmove;
+void() teleporttrain_next =
+{
+	local vector dir;
+	setorigin(self, self.enemy.origin + '16 16 16');
+	
+	if (!self.target)
+	{
+		self.enemy = world;
+		return;
+	}
+	self.enemy = find(world, targetname, self.target);
+	if (self.enemy.classname == "path_corner")
+	{
+		dir = normalize((self.enemy.origin + '16 16 16') - self.origin);
+		self.velocity = dir * self.speed;
+		self.target = self.enemy.target;
+	}
+	else
+	{
+		objerror("unable to find target\n");
+		remove(self);
+	}
+	teleporttrain_calcmove();
+};
+void() teleporttrain_wait =
+{
+	local float wait_time;
+	if (self.enemy.wait > 0)
+		wait_time = self.enemy.wait;
+	else
+		wait_time = .1;
+	
+	self.velocity = '0 0 0';
+	self.nextthink = time + wait_time;
+	self.think = teleporttrain_next;
+	
+}
+void() teleporttrain_calcmove =
+{
+	local float len;
+	local vector delta;
+	local float spd;
+	
+	delta = (self.enemy.origin + '16 16 16') - self.origin;
+	len = vlen(delta);
+	spd = vlen(self.velocity);
+	self.nextthink = time + (len / spd);
+	self.think = teleporttrain_wait;
+};
+void() teleporttrain_use =
+{
+	if (self.velocity == '0 0 0')
+	{
+		teleporttrain_next();
+	}
+};
+void() teleporttrain_find =
+{
+	// always start positioned on the first path_corner
+	self.enemy = find(world, targetname, self.target);
+	if (self.enemy.classname == "path_corner")
+	{
+		setorigin (self, self.enemy.origin + '16 16 16');
+		self.target = self.enemy.target;
+	}
+	else
+	{
+		objerror("unable to find target\n");
+		remove(self);
+		return;
+	}
+	
+	// not triggered, so start immediately
+	if (!self.targetname)
+	{
+		teleporttrain_next();
+	}
+	else
+	{
+		self.use = teleporttrain_use;
+	}
+};
+/*QUAKED misc_teleporttrain (.5 .5 .5) (-16 -16 -16) (16 16 16) X X X X X X X X NOT_IN_EASY NOT_IN_NORMAL NOT_IN_HARD NOT_IN_DM
+{	model("progs/teleport.mdl");	}
+
+Teleporter target for final boss level. Must target a series of 'path_corner' entities.
+It will position itself on its first target at map load.
+If a targetname is set, it must be triggered to start moving, otherwise it will start automatically.
 */
 void() misc_teleporttrain =
-{	
-	if (!self.speed)
-		self.speed = 100;
+{
+	if (SUB_Inhibit ())  // new spawnflags for all entities -- iw
+		return;
 
 	if (!self.target)
-		objerror ("func_train without a target");
+	{
+		objerror ("no target");
+		remove(self);
+		return;
+	}
+	if (self.speed <= 0)
+	{
+		self.speed = 100;
+	}
 
-	self.cnt = 1;
 	self.solid = SOLID_NOT;
-	self.movetype = MOVETYPE_PUSH;
-	self.blocked = train_blocked;
-	self.use = train_use;
-	self.avelocity = '100 200 300';
-
-	self.noise = ("misc/null.wav");
-	precache_sound ("misc/null.wav");
-	self.noise1 = ("misc/null.wav");
-	precache_sound ("misc/null.wav");
-
-	precache_model2 ("progs/teleport.mdl");
+	self.movetype = MOVETYPE_FLY;
+	precache_model ("progs/teleport.mdl");
 	setmodel (self, "progs/teleport.mdl");
-	setsize (self, self.mins , self.maxs);
-	setorigin (self, self.origin);
+	setsize (self, '-16 -16 -16', '16 16 16');
 
-	// start trains on the second frame, to make sure their targets have had
-	// a chance to spawn
-	self.nextthink = self.ltime + 0.1;
-	self.think = func_train_find;
+	//Causes the ball to spin around like it was originally intended to.
+	self.avelocity = '40 80 120';
+	//self.avelocity = '100 200 300';
+	
+	self.think = teleporttrain_find;
+	self.nextthink = time + 0.1;
 };
-

@@ -557,7 +557,7 @@ int serverid;	/* The unique id of this server within the server cluster. */
 .float pitch_speed;
 .float drawflags;	/* Various flags that affect lighting values and scaling. Typically set to 96 in quake for proper compatibility with DP_QC_SCALE. */
 .float abslight;	/* Allows overriding light levels. Use drawflags to state that this field should actually be used. */
-.vector color;	/* This affects the colour of realtime lights that were enabled via the pflags field. */
+//.vector color;	/* This affects the colour of realtime lights that were enabled via the pflags field. */
 .float light_lev;	/* This is the radius of an entity's light. This is not normally used by the engine, but is used for realtime lights (ones that are enabled with the pflags field). */
 .float style;	/* Used by the light util to decide how an entity's light should animate. On an entity with pflags set, this also affects realtime lights. */
 .float pflags;	/* Realtime lighting flags */

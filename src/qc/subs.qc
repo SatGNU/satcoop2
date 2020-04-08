@@ -1,44 +1,28 @@
-/*  Copyright (C) 1996-1997  Id Software, Inc.
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-
-    See file, 'COPYING', for details.
-*/
 
 
 void() SUB_Null = {};
 
+void(entity attacker, float damage) SUB_NullPain = {};
+
 void() SUB_Remove = {remove(self);};
 
 
-/*QuakeEd only writes a single float for angles (bad idea), so up and down are
-just constant angles.*/
+/*
+QuakeEd only writes a single float for angles (bad idea), so up and down are
+just constant angles.
+*/
 void() SetMovedir =
 {
 	if (self.angles == '0 -1 0')
 		self.movedir = '0 0 1';
-
 	else if (self.angles == '0 -2 0')
 		self.movedir = '0 0 -1';
-
 	else
 	{
-		makevectors2 (self.angles);
+		makevectors (self.angles);
 		self.movedir = v_forward;
 	}
-	
+
 	self.angles = '0 0 0';
 };
 
@@ -49,16 +33,15 @@ InitTrigger
 */
 void() InitTrigger =
 {
-	// trigger angles are used for one-way touches.  An angle of 0 is assumed
-	// to mean no restrictions, so use a yaw of 360 instead.
+// trigger angles are used for one-way touches.  An angle of 0 is assumed
+// to mean no restrictions, so use a yaw of 360 instead.
 	if (self.angles != '0 0 0')
 		SetMovedir ();
-
 	self.solid = SOLID_TRIGGER;
 	setmodel (self, self.model);	// set size and link into world
 	self.movetype = MOVETYPE_NONE;
 	self.modelindex = 0;
-	self.model = string_null;
+	self.model = "";
 };
 
 /*
@@ -71,7 +54,7 @@ self.origin traveling at speed
 */
 void(entity ent, vector tdest, float tspeed, void() func) SUB_CalcMoveEnt =
 {
-	local entity	stemp;
+local entity	stemp;
 	stemp = self;
 	self = ent;
 
@@ -81,8 +64,8 @@ void(entity ent, vector tdest, float tspeed, void() func) SUB_CalcMoveEnt =
 
 void(vector tdest, float tspeed, void() func) SUB_CalcMove =
 {
-	local vector	vdestdelta;
-	local float		len, traveltime;
+local vector	vdestdelta;
+local float		len, traveltime;
 
 	if (!tspeed)
 		objerror("No speed is defined!");
@@ -97,14 +80,14 @@ void(vector tdest, float tspeed, void() func) SUB_CalcMove =
 		self.nextthink = self.ltime + 0.1;
 		return;
 	}
-		
-	// set destdelta to the vector needed to move
+
+// set destdelta to the vector needed to move
 	vdestdelta = tdest - self.origin;
-	
-	// calculate length of vector
+
+// calculate length of vector
 	len = vlen (vdestdelta);
-	
-	// divide by speed to get time to reach dest
+
+// divide by speed to get time to reach dest
 	traveltime = len / tspeed;
 
 	if (traveltime < 0.1)
@@ -113,12 +96,12 @@ void(vector tdest, float tspeed, void() func) SUB_CalcMove =
 		self.nextthink = self.ltime + 0.1;
 		return;
 	}
-	
-	// set nextthink to trigger a think when dest is reached
+
+// set nextthink to trigger a think when dest is reached
 	self.nextthink = self.ltime + traveltime;
 
-	// scale the destdelta vector by the time spent traveling to get velocity
-	self.velocity = vdestdelta * (1/traveltime);	// qcc won't take vec/float	
+// scale the destdelta vector by the time spent traveling to get velocity
+	self.velocity = vdestdelta * (1/traveltime);	// qcc won't take vec/float
 };
 
 /*
@@ -131,7 +114,6 @@ void()  SUB_CalcMoveDone =
 	setorigin(self, self.finaldest);
 	self.velocity = '0 0 0';
 	self.nextthink = -1;
-
 	if (self.think1)
 		self.think1();
 };
@@ -142,14 +124,14 @@ void()  SUB_CalcMoveDone =
 SUB_CalcAngleMove
 
 calculate self.avelocity and self.nextthink to reach destangle from
-self.angles rotating 
+self.angles rotating
 
 The calling function should make sure self.think is valid
 ===============
 */
 void(entity ent, vector destangle, float tspeed, void() func) SUB_CalcAngleMoveEnt =
 {
-	local entity		stemp;
+local entity		stemp;
 	stemp = self;
 	self = ent;
 	SUB_CalcAngleMove (destangle, tspeed, func);
@@ -158,27 +140,27 @@ void(entity ent, vector destangle, float tspeed, void() func) SUB_CalcAngleMoveE
 
 void(vector destangle, float tspeed, void() func) SUB_CalcAngleMove =
 {
-	local vector	destdelta;
-	local float		len, traveltime;
+local vector	destdelta;
+local float		len, traveltime;
 
 	if (!tspeed)
 		objerror("No speed is defined!");
-		
-	// set destdelta to the vector needed to move
+
+// set destdelta to the vector needed to move
 	destdelta = destangle - self.angles;
-	
-	// calculate length of vector
+
+// calculate length of vector
 	len = vlen (destdelta);
-	
-	// divide by speed to get time to reach dest
+
+// divide by speed to get time to reach dest
 	traveltime = len / tspeed;
 
-	// set nextthink to trigger a think when dest is reached
+// set nextthink to trigger a think when dest is reached
 	self.nextthink = self.ltime + traveltime;
 
-	// scale the destdelta vector by the time spent traveling to get velocity
+// scale the destdelta vector by the time spent traveling to get velocity
 	self.avelocity = destdelta * (1 / traveltime);
-	
+
 	self.think1 = func;
 	self.finalangle = destangle;
 	self.think = SUB_CalcAngleMoveDone;
@@ -194,7 +176,6 @@ void() SUB_CalcAngleMoveDone =
 	self.angles = self.finalangle;
 	self.avelocity = '0 0 0';
 	self.nextthink = -1;
-
 	if (self.think1)
 		self.think1();
 };
@@ -209,7 +190,7 @@ void() DelayThink =
 	remove(self);
 };
 
-/*
+/* ### (added targets, killtargets, and targetnames)
 ==============================
 SUB_UseTargets
 
@@ -221,23 +202,51 @@ do the SUB_UseTargets after that many seconds have passed.
 Centerprints any self.message to the activator.
 
 Removes all entities with a targetname that match self.killtarget,
-and removes them, so some events can remove other triggers.
+or killtarget2, so some events can remove other triggers.
 
-Search for (string)targetname in all entities that
-match (string)self.target and call their .use function
-
+Search for (string)targetname, targetname2, targetname3, and targetname 4
+in all entities that match (string)self.target, self.target2, self.target3,
+or self.target4 and use their .use function.
 ==============================
 */
+void(string matchstring, .string matchfield) SUB_UseSpecificTarget =
+{
+	local entity t, stemp, otemp, act;
+
+	act = activator;
+	t = find (world, matchfield, matchstring);
+	while ( t != world )
+	{
+		stemp = self;
+		otemp = other;
+		self = t;
+		other = stemp;
+		if (self.use != SUB_Null)
+		{
+			if (self.use)
+			{
+				lastnameused = matchstring;
+				self.use ();
+			}
+		}
+		self = stemp;
+		other = otemp;
+		activator = act;
+		t = find (t, matchfield, matchstring);
+	}
+};
+
 void() SUB_UseTargets =
 {
-	local entity t, act, stemp, otemp;
+//	local entity t, stemp, otemp, act;
+	local entity t;
 
 //
 // check for a delay
 //
 	if (self.delay)
 	{
-		// create a temp object to fire at a later time
+	// create a temp object to fire at a later time
 		t = spawn();
 		t.classname = "DelayedUse";
 		t.nextthink = time + self.delay;
@@ -245,82 +254,256 @@ void() SUB_UseTargets =
 		t.enemy = activator;
 		t.message = self.message;
 		t.killtarget = self.killtarget;
+		t.killtarget2 = self.killtarget2;
 		t.target = self.target;
-
+		t.target2 = self.target2;
+		t.target3 = self.target3;
+		t.target4 = self.target4;
 		return;
 	}
-	
-	
+
+
 //
 // print the message
 //
-	if (activator.classname == "player" && self.message != string_null)
+	if (activator.classname == "player" && self.message != "")
 	{
 		centerprint (activator, self.message);
-
 		if (!self.noise)
 			sound (activator, CHAN_VOICE, "misc/talk.wav", 1, ATTN_NORM);
 	}
 
 //
-// kill the killtagets
+// kill the killtarget entities
 //
-	if (self.killtarget != string_null)
+	if (self.killtarget != "")
 	{
-		t = world;
-
-		do
+		t = find(world, targetname, self.killtarget);
+		while(t != world)
 		{
-			t = find (t, targetname, self.killtarget);
-
-			if (!t)
-				return;
-
-			remove (t);
-		} while ( 1 );
+			remove(t);
+			t = find(t, targetname, self.killtarget);
+		}
+		t = find(world, targetname2, self.killtarget);
+		while(t != world)
+		{
+			remove(t);
+			t = find(t, targetname2, self.killtarget);
+		}
+		t = find(world, targetname3, self.killtarget);
+		while(t != world)
+		{
+			remove(t);
+			t = find(t, targetname3, self.killtarget);
+		}
+		t = find(world, targetname4, self.killtarget);
+		while(t != world)
+		{
+			remove(t);
+			t = find(t, targetname4, self.killtarget);
+		}
 	}
-	
+
+//
+// kill the killtaget2 entities
+//
+	if (self.killtarget2 != "")
+	{
+		t = find(world, targetname, self.killtarget2);
+		while(t != world)
+		{
+			remove(t);
+			t = find(t, targetname, self.killtarget2);
+		}
+		t = find(world, targetname2, self.killtarget2);
+		while(t != world)
+		{
+			remove(t);
+			t = find(t, targetname2, self.killtarget2);
+		}
+		t = find(world, targetname3, self.killtarget2);
+		while(t != world)
+		{
+			remove(t);
+			t = find(t, targetname3, self.killtarget2);
+		}
+		t = find(world, targetname4, self.killtarget2);
+		while(t != world)
+		{
+			remove(t);
+			t = find(t, targetname4, self.killtarget2);
+		}
+	}
+
 //
 // fire targets
 //
-	if (self.target != string_null)
+
+// target 1
+	if (self.target != "")
 	{
-		act = activator;
-		t = world;
+		SUB_UseSpecificTarget(self.target, targetname);
+		SUB_UseSpecificTarget(self.target, targetname2);
+		SUB_UseSpecificTarget(self.target, targetname3);
+		SUB_UseSpecificTarget(self.target, targetname4);
+	}
 
-		do
-		{
-			t = find (t, targetname, self.target);
-			if (!t)
-			{
-				return;
-			}
+// target 2
+	if (self.target2 != "")
+	{
+		SUB_UseSpecificTarget(self.target2, targetname);
+		SUB_UseSpecificTarget(self.target2, targetname2);
+		SUB_UseSpecificTarget(self.target2, targetname3);
+		SUB_UseSpecificTarget(self.target2, targetname4);
+	}
 
-			stemp = self;
-			otemp = other;
-			self = t;
-			other = stemp;
+// target 3
+	if (self.target3 != "")
+	{
+		SUB_UseSpecificTarget(self.target3, targetname);
+		SUB_UseSpecificTarget(self.target3, targetname2);
+		SUB_UseSpecificTarget(self.target3, targetname3);
+		SUB_UseSpecificTarget(self.target3, targetname4);
+	}
 
-			if (self.use != SUB_Null)
-			{
-				if (self.use)
-					self.use ();
-			}
-			self = stemp;
-			other = otemp;
-			activator = act;
-		} while ( 1 );
-	}	
-
+// target 4
+	if (self.target4 != "")
+	{
+		SUB_UseSpecificTarget(self.target4, targetname);
+		SUB_UseSpecificTarget(self.target4, targetname2);
+		SUB_UseSpecificTarget(self.target4, targetname3);
+		SUB_UseSpecificTarget(self.target4, targetname4);
+	}
 };
 
-/*in nightmare mode, all attack_finished times become 0
-some monsters refire twice automatically*/
+void(string matchstring) SUB_UseName =
+{
+	SUB_UseSpecificTarget(matchstring, targetname);
+	SUB_UseSpecificTarget(matchstring, targetname2);
+	SUB_UseSpecificTarget(matchstring, targetname3);
+	SUB_UseSpecificTarget(matchstring, targetname4);
+};
+// ### end of Custents triggering code
+
+/*
+================
+SUB_UseAndForgetTargets
+
+This calls SUB_UseTargets, then clears all of self's fields that cause
+SUB_UseTargets to do things.  The intention is that if SUB_UseTargets
+gets called again in the future, it won't do anything.  Call this
+function if you want an entity to fire its targets just this once, and
+never again.
+
+Note that this function relies on the fact that SUB_UseTargets has
+already been modified to work around the engine bug involving tests of
+the form 'if (string)', i.e. that the tests in SUB_UseTargets are now of
+the form 'if (string != "")'.  -- iw
+================
+*/
+void() SUB_UseAndForgetTargets =
+{
+	SUB_UseTargets ();
+
+	self.delay = 0;
+	self.killtarget = "";
+	self.killtarget2 = "";
+	self.message = "";
+	self.target = "";
+	self.target2 = "";
+	self.target3 = "";
+	self.target4 = "";
+};
+
+/*
+================
+SUB_FieldIsTargeted
+
+Return TRUE if the "fld" field of this entity is non-empty and matches
+the target (or target2/3/4 or pain_target) field of any other entity,
+otherwise return FALSE.  -- iw
+================
+*/
+float(.string fld) SUB_FieldIsTargeted =
+{
+	if (self.fld == "")
+		return FALSE;
+
+	// the following function calls are staggered to avoid the silly
+	// "return value conflict" problem with traditional compilers -- iw
+
+	if (find (world, target, self.fld) != world)
+		return TRUE;
+
+	if (find (world, target2, self.fld) != world)
+		return TRUE;
+
+	if (find (world, target3, self.fld) != world)
+		return TRUE;
+
+	if (find (world, target4, self.fld) != world)
+		return TRUE;
+
+	if (find (world, pain_target, self.fld) != world)
+		return TRUE;
+
+	return FALSE;
+};
+
+/*
+================
+SUB_IsTargeted
+
+Return TRUE if the targetname (or targetname2/3/4) field of this entity
+is non-empty and matches the target (or target2/3/4 or pain_target)
+field of any other entity, otherwise return FALSE.  -- iw
+================
+*/
+float() SUB_IsTargeted =
+{
+	// the following function calls are staggered to avoid the silly
+	// "return value conflict" problem with traditional compilers -- iw
+
+	if (SUB_FieldIsTargeted (targetname))
+		return TRUE;
+
+	if (SUB_FieldIsTargeted (targetname2))
+		return TRUE;
+
+	if (SUB_FieldIsTargeted (targetname3))
+		return TRUE;
+
+	if (SUB_FieldIsTargeted (targetname4))
+		return TRUE;
+
+	return FALSE;
+};
+
+//
+// pain_target //dumptruck_ds
+//
+void() SUB_UsePain =
+{
+	if (self.pain_target != "")
+	{
+		SUB_UseSpecificTarget (self.pain_target, targetname);
+		SUB_UseSpecificTarget (self.pain_target, targetname2);
+		SUB_UseSpecificTarget (self.pain_target, targetname3);
+		SUB_UseSpecificTarget (self.pain_target, targetname4);
+	}
+	self.pain_target = "";  //dumptruck_ds via Discord - thanks Spike, Snaut and QueenJazz
+};
+
+/*
+
+in nightmare mode, all attack_finished times become 0
+some monsters refire twice automatically
+
+*/
 
 void(float normal) SUB_AttackFinished =
 {
 	self.cnt = 0;		// refire count for nightmare
-
 	if (skill != 3)
 		self.attack_finished = time + normal;
 };
@@ -331,13 +514,38 @@ void (void() thinkst) SUB_CheckRefire =
 {
 	if (skill != 3)
 		return;
-
 	if (self.cnt == 1)
 		return;
-
 	if (!visible (self.enemy))
 		return;
-
 	self.cnt = 1;
 	self.think = thinkst;
+};
+
+/*
+================
+SUB_DislodgeRestingEntities
+
+This clears the FL_ONGROUND flag from any entities that are on top of
+self.
+
+The engine does not update the FL_ONGROUND flag automatically in some
+cases, with the result that certain types of entities can be left
+floating in mid-air if the entity they are resting on is removed from
+under them.  This function is intended to be called in the case where
+self is going to be removed, to ensure that other entities are not left
+floating.  -- iw
+================
+*/
+void() SUB_DislodgeRestingEntities =
+{
+	local entity e;
+
+	e = nextent (world);
+	while (e != world)
+	{
+		if ((e.flags & FL_ONGROUND) && e.groundentity == self)
+			e.flags = e.flags - (e.flags & FL_ONGROUND);
+		e = nextent (e);
+	}
 };

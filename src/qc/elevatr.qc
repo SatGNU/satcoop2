@@ -1,39 +1,49 @@
-// button and multiple button
+// elevator button
+// pmack
+// sept 96
 
-void() button_wait;
-void() button_return;
+float ELVTR_DOWN = 1;
 
-void() button_wait =
+void() elvtr_button_wait;
+void() elvtr_button_return;
+
+void() elvtr_button_wait =
 {
+	elv_butn_dir = 0;
+	if (self.spawnflags & ELVTR_DOWN)
+		elv_butn_dir = -1;
+	else
+		elv_butn_dir = 1;
+		
 	self.state = STATE_TOP;
 	self.nextthink = self.ltime + self.wait;
-	self.think = button_return;
+	self.think = elvtr_button_return;
 	activator = self.enemy;
 	SUB_UseTargets();
 	self.frame = 1;			// use alternate textures
 };
 
-void() button_done =
+void() elvtr_button_done =
 {
 	self.state = STATE_BOTTOM;
 };
 
-void() button_return =
+void() elvtr_button_return =
 {
 	self.state = STATE_DOWN;
-	SUB_CalcMove (self.pos1, self.speed, button_done);
+	SUB_CalcMove (self.pos1, self.speed, elvtr_button_done);
 	self.frame = 0;			// use normal textures
 	if (self.health)
 		self.takedamage = DAMAGE_YES;	// can be shot again
 };
 
 
-void() button_blocked =
+void() elvtr_button_blocked =
 {	// do nothing, just don't ome all the way back out
 };
 
 
-void() button_fire =
+void() elvtr_button_fire =
 {
 	if (self.state == STATE_UP || self.state == STATE_TOP)
 		return;
@@ -41,34 +51,39 @@ void() button_fire =
 	sound (self, CHAN_VOICE, self.noise, 1, ATTN_NORM);
 
 	self.state = STATE_UP;
-	SUB_CalcMove (self.pos2, self.speed, button_wait);
+	SUB_CalcMove (self.pos2, self.speed, elvtr_button_wait);
 };
 
 
-void() button_use =
+void() elvtr_button_use =
 {
 	self.enemy = activator;
-	button_fire ();
+	elvtr_button_fire ();
 };
 
-void() button_touch =
+void() elvtr_button_touch =
 {
 	if (other.classname != "player")
 		return;
 	self.enemy = other;
-	button_fire ();
+	elvtr_button_fire ();
 };
 
-void() button_killed =
+void() elvtr_button_killed =
 {
 	self.enemy = damage_attacker;
 	self.health = self.max_health;
 	self.takedamage = DAMAGE_NO;	// wil be reset upon return
-	button_fire ();
+	elvtr_button_fire ();
 };
 
 
-/*QUAKED func_button (0 .5 .8) ?
+/*QUAKED func_elvtr_button (0 .5 .8) ? ELVTR_DOWN
+ELEVATOR BUTTON ONLY!
+
+ELVTR_DOWN causes this to be a DOWN button.
+Default is UP.
+
 When a button is touched, it moves some distance in the direction of it's angle, triggers all of it's targets, waits some time, then returns to it's original position where it can be triggered again.
 
 "angle"		determines the opening direction
@@ -83,7 +98,7 @@ When a button is touched, it moves some distance in the direction of it's angle,
 2) metallic click
 3) in-out
 */
-void() func_button =
+void() func_elvtr_button =
 {
 	if (SUB_Inhibit ())  // new spawnflags for all entities -- iw
 		return;
@@ -115,17 +130,17 @@ void() func_button =
 	self.solid = SOLID_BSP;
 	setmodel (self, self.model);
 
-	self.blocked = button_blocked;
-	self.use = button_use;
+	self.blocked = elvtr_button_blocked;
+	self.use = elvtr_button_use;
 
 	if (self.health)
 	{
 		self.max_health = self.health;
-		self.th_die = button_killed;
+		self.th_die = elvtr_button_killed;
 		self.takedamage = DAMAGE_YES;
 	}
 	else
-		self.touch = button_touch;
+		self.touch = elvtr_button_touch;
 
 	if (!self.speed)
 		self.speed = 40;

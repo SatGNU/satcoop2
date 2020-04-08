@@ -1,0 +1,21 @@
+Args: C:\cygwin64\bin\fteqcc-old.exe .
+outputfile: progs.dat
+compiling .
+
+************ ERROR ************
+Couldn't open file .
+Args: C:\cygwin64\bin\fteqcc-old.exe
+FTEQCC: Dec 28 2015
+Source file: progs.src
+outputfile: ../../progs.dat
+compiling fteextensions.qc
+fteextensions.qc:21: warning Q120: warning id not recognised
+fteextensions.qc:668: error: "__in" is not a type
+fteextensions.qc:1657: error: "__out" is not a type
+fteextensions.qc:2040: error: "__out" is not a type
+fteextensions.qc:2044: error: "__out" is not a type
+
+************ ERROR ************
+Errors have occured
+
+Error in fteextensions.qc on line 668

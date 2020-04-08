@@ -1,29 +1,11 @@
-/*  Copyright (C) 1996-1997  Id Software, Inc.
 
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-
-    See file, 'COPYING', for details.
-*/
-
-void() InitBodyQueue;
+void() InitBodyQue;
 
 
 void() main =
 {
 	dprint ("main function\n");
-	
+
 // these are just commands the the prog compiler to copy these files
 
 	precache_file ("progs.dat");
@@ -70,35 +52,35 @@ void() main =
 	precache_file ("gfx/dim_tcp.lmp");
 	precache_file ("gfx/dim_mult.lmp");
 	precache_file ("gfx/mainmenu.lmp");
-	
+
 	precache_file ("gfx/box_tl.lmp");
 	precache_file ("gfx/box_tm.lmp");
 	precache_file ("gfx/box_tr.lmp");
-	
+
 	precache_file ("gfx/box_ml.lmp");
 	precache_file ("gfx/box_mm.lmp");
 	precache_file ("gfx/box_mm2.lmp");
 	precache_file ("gfx/box_mr.lmp");
-	
+
 	precache_file ("gfx/box_bl.lmp");
 	precache_file ("gfx/box_bm.lmp");
 	precache_file ("gfx/box_br.lmp");
-	
+
 	precache_file ("gfx/sp_menu.lmp");
 	precache_file ("gfx/ttl_sgl.lmp");
 	precache_file ("gfx/ttl_main.lmp");
 	precache_file ("gfx/ttl_cstm.lmp");
-	
+
 	precache_file ("gfx/mp_menu.lmp");
-	
+
 	precache_file ("gfx/netmen1.lmp");
 	precache_file ("gfx/netmen2.lmp");
 	precache_file ("gfx/netmen3.lmp");
 	precache_file ("gfx/netmen4.lmp");
 	precache_file ("gfx/netmen5.lmp");
-	
+
 	precache_file ("gfx/sell.lmp");
-	
+
 	precache_file ("gfx/help0.lmp");
 	precache_file ("gfx/help1.lmp");
 	precache_file ("gfx/help2.lmp");
@@ -173,6 +155,95 @@ void() main =
 };
 
 
+/*
+================
+DetectKnownRelease
+
+This detects whether the current map is from a known release for which
+a backwards-compatibility hack should be applied, and sets the
+known_release global accordingly.  -- iw
+================
+*/
+void() DetectKnownRelease =
+{
+	local string release_name;
+
+	known_release = KNOWN_RELEASE_NOT;
+	release_name = "";
+
+	if (mapname == "dm1" ||
+		mapname == "dm2" ||
+		mapname == "dm3" ||
+		mapname == "dm4" ||
+		mapname == "dm5" ||
+		mapname == "dm6" ||
+		mapname == "e1m1" ||
+		mapname == "e1m2" ||
+		mapname == "e1m3" ||
+		mapname == "e1m4" ||
+		mapname == "e1m5" ||
+		mapname == "e1m6" ||
+		mapname == "e1m7" ||
+		mapname == "e1m8" ||
+		mapname == "e2m1" ||
+		mapname == "e2m2" ||
+		mapname == "e2m3" ||
+		mapname == "e2m4" ||
+		mapname == "e2m5" ||
+		mapname == "e2m6" ||
+		mapname == "e2m7" ||
+		mapname == "e3m1" ||
+		mapname == "e3m2" ||
+		mapname == "e3m3" ||
+		mapname == "e3m4" ||
+		mapname == "e3m5" ||
+		mapname == "e3m6" ||
+		mapname == "e3m7" ||
+		mapname == "e4m1" ||
+		mapname == "e4m2" ||
+		mapname == "e4m3" ||
+		mapname == "e4m4" ||
+		mapname == "e4m5" ||
+		mapname == "e4m6" ||
+		mapname == "e4m7" ||
+		mapname == "e4m8" ||
+		mapname == "end" ||
+		(mapname == "start" && world.message == "Introduction"))
+	{
+		known_release = KNOWN_RELEASE_ID1;
+		release_name = "id1";
+	}
+
+	if (mapname == "jamx_artistical" ||
+		mapname == "jamx_bloodshot" ||
+		mapname == "jamx_fw" ||
+		mapname == "jamx_hcm" ||
+		mapname == "jamx_ionous" ||
+		mapname == "jamx_jcr" ||
+		mapname == "jamx_kalebclark" ||
+		mapname == "jamx_mafon" ||
+		//mapname == "jamx_mugwump" ||   // dummy map
+		mapname == "jamx_naitelveni" ||
+		mapname == "jamx_newhouse" ||
+		mapname == "jamx_pinchy" ||
+		mapname == "jamx_strwrk" ||
+		mapname == "jamx_ukko" ||
+		mapname == "jamx_yoder" ||
+		(mapname == "start" && world.message == "An Unending Dusk"))
+	{
+		known_release = KNOWN_RELEASE_FUNC_MAPJAMX;
+		release_name = "func_mapjamx";
+	}
+
+	if (release_name != "")
+	{
+		dprint ("WARNING: progs.dat detected a map from ");
+		dprint (release_name);
+		dprint (", attempting to behave compatibly\n");
+	}
+};
+
+
 entity	lastspawn;
 
 //=======================
@@ -185,29 +256,38 @@ World Types:
 0: medieval
 1: metal
 2: base
+
+Optionally set reset_items to one of the following values:
+0: don't reset the player's inventory
+1: reset to shotgun, axe, and 25 shells
+2: reset to axe only
 */
 //=======================
 void() worldspawn =
 {
-	lastspawn = world;
-	InitBodyQueue ();
+	DetectKnownRelease ();
 
-	// custom map attributes
+	InitNewSpawnflags ();  // new spawnflags for all entities -- iw
+
+	lastspawn = world;
+	InitBodyQue ();
+
+// custom map attributes
 	if (self.model == "maps/e1m8.bsp")
 		cvar_set ("sv_gravity", "100");
 	else
 		cvar_set ("sv_gravity", "800");
 
-	// the area based ambient sounds MUST be the first precache_sounds
+// the area based ambient sounds MUST be the first precache_sounds
 
-	// player precaches	
+// player precaches
 	W_Precache ();			// get weapon precaches
 
-	// sounds used from C physics code
+// sounds used from C physics code
 	precache_sound ("demon/dland2.wav");		// landing thud
 	precache_sound ("misc/h2ohit1.wav");		// landing splash
 
-	// setup precaches allways needed
+// setup precaches always needed
 	precache_sound ("items/itembk2.wav");		// item respawn sound
 	precache_sound ("player/plyrjmp8.wav");		// player jump
 	precache_sound ("player/land.wav");			// player landing
@@ -230,6 +310,7 @@ void() worldspawn =
 	precache_sound ("items/armor1.wav");		// armor up
 	precache_sound ("weapons/lhit.wav");		//lightning
 	precache_sound ("weapons/lstart.wav");		//lightning start
+	precache_sound ("items/damage2.wav");
 	precache_sound ("items/damage3.wav");
 
 	precache_sound ("misc/power.wav");			//lightning for boss
@@ -255,7 +336,7 @@ void() worldspawn =
 	precache_sound ("player/death4.wav");
 	precache_sound ("player/death5.wav");
 
-// ax sounds	
+// ax sounds
 	precache_sound ("weapons/ax1.wav");			// ax swoosh
 	precache_sound ("player/axhit1.wav");		// ax hit meat
 	precache_sound ("player/axhit2.wav");		// ax hit world
@@ -294,7 +375,7 @@ void() worldspawn =
 	precache_model ("progs/bolt2.mdl");		// for lightning gun
 	precache_model ("progs/bolt3.mdl");		// for boss shock
 	precache_model ("progs/lavaball.mdl");	// for testing
-	
+
 	precache_model ("progs/missile.mdl");
 	precache_model ("progs/grenade.mdl");
 	precache_model ("progs/spike.mdl");
@@ -305,7 +386,7 @@ void() worldspawn =
 	precache_model ("progs/zom_gib.mdl");
 
 	precache_model ("progs/v_light.mdl");
-	
+
 
 //
 // Setup light animation tables. 'a' is total darkness, 'z' is maxbright.
@@ -313,40 +394,40 @@ void() worldspawn =
 
 	// 0 normal
 	lightstyle(0, "m");
-	
+
 	// 1 FLICKER (first variety)
 	lightstyle(1, "mmnmmommommnonmmonqnmmo");
-	
+
 	// 2 SLOW STRONG PULSE
 	lightstyle(2, "abcdefghijklmnopqrstuvwxyzyxwvutsrqponmlkjihgfedcba");
-	
+
 	// 3 CANDLE (first variety)
 	lightstyle(3, "mmmmmaaaaammmmmaaaaaabcdefgabcdefg");
-	
+
 	// 4 FAST STROBE
 	lightstyle(4, "mamamamamama");
-	
+
 	// 5 GENTLE PULSE 1
 	lightstyle(5,"jklmnopqrstuvwxyzyxwvutsrqponmlkj");
-	
+
 	// 6 FLICKER (second variety)
 	lightstyle(6, "nmonqnmomnmomomno");
-	
+
 	// 7 CANDLE (second variety)
 	lightstyle(7, "mmmaaaabcdefgmmmmaaaammmaamm");
-	
+
 	// 8 CANDLE (third variety)
 	lightstyle(8, "mmmaaammmaaammmabcdefaaaammmmabcdefmmmaaaa");
-	
+
 	// 9 SLOW STROBE (fourth variety)
 	lightstyle(9, "aaaaaaaazzzzzzzz");
-	
+
 	// 10 FLUORESCENT FLICKER
 	lightstyle(10, "mmamammmmammamamaaamammma");
 
 	// 11 SLOW PULSE NOT FADE TO BLACK
 	lightstyle(11, "abcdefghijklmnopqrrqponmlkjihgfedcba");
-	
+
 	// styles 32-62 are assigned by the light program for switchable lights
 
 	// 63 testing
@@ -355,6 +436,9 @@ void() worldspawn =
 
 void() StartFrame =
 {
+	if (!done_inhibition_summary)  // new spawnflags for all entities -- iw
+		PrintInhibitionSummary ();
+
 	teamplay = cvar("teamplay");
 	skill = cvar("skill");
 	framecount = framecount + 1;
@@ -368,42 +452,40 @@ BODY QUE
 ==============================================================================
 */
 
-entity	bodyqueue_head;
+entity	bodyque_head;
 
-void() bodyqueue =
+void() bodyque =
 {	// just here so spawn functions don't complain after the world
-	// creates bodyqueues
+	// creates bodyques
 };
 
-void() InitBodyQueue =
-{	
-	bodyqueue_head = spawn();
-	bodyqueue_head.classname = "bodyqueue";
-	bodyqueue_head.owner = spawn();
-	bodyqueue_head.owner.classname = "bodyqueue";
-	bodyqueue_head.owner.owner = spawn();
-	bodyqueue_head.owner.owner.classname = "bodyqueue";
-	bodyqueue_head.owner.owner.owner = spawn();
-	bodyqueue_head.owner.owner.owner.classname = "bodyqueue";
-	bodyqueue_head.owner.owner.owner.owner = bodyqueue_head;
+void() InitBodyQue =
+{
+	bodyque_head = spawn();
+	bodyque_head.classname = "bodyque";
+	bodyque_head.owner = spawn();
+	bodyque_head.owner.classname = "bodyque";
+	bodyque_head.owner.owner = spawn();
+	bodyque_head.owner.owner.classname = "bodyque";
+	bodyque_head.owner.owner.owner = spawn();
+	bodyque_head.owner.owner.owner.classname = "bodyque";
+	bodyque_head.owner.owner.owner.owner = bodyque_head;
 };
 
 
 // make a body que entry for the given ent so the ent can be
 // respawned elsewhere
-void(entity ent) CopyToBodyQueue =
+void(entity ent) CopyToBodyQue =
 {
-	bodyqueue_head.angles = ent.angles;
-	bodyqueue_head.model = ent.model;
-	bodyqueue_head.modelindex = ent.modelindex;
-	bodyqueue_head.frame = ent.frame;
-	bodyqueue_head.colormap = ent.colormap;
-	bodyqueue_head.movetype = ent.movetype;
-	bodyqueue_head.velocity = ent.velocity;
-	bodyqueue_head.flags = 0;
-	setorigin (bodyqueue_head, ent.origin);
-	setsize (bodyqueue_head, ent.mins, ent.maxs);
-	bodyqueue_head = bodyqueue_head.owner;
+	bodyque_head.angles = ent.angles;
+	bodyque_head.model = ent.model;
+	bodyque_head.modelindex = ent.modelindex;
+	bodyque_head.frame = ent.frame;
+	bodyque_head.colormap = ent.colormap;
+	bodyque_head.movetype = ent.movetype;
+	bodyque_head.velocity = ent.velocity;
+	bodyque_head.flags = 0;
+	setorigin (bodyque_head, ent.origin);
+	setsize (bodyque_head, ent.mins, ent.maxs);
+	bodyque_head = bodyque_head.owner;
 };
-
-
