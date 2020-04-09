@@ -1110,10 +1110,6 @@ void() misc_noisemaker =
 .float lastinteracted;
 void(entity e, entity player) func_interact_oninteract =
 {
-	if(!e.target) {
-		return;
-	}
-
 	if(time < e.lastinteracted + e.wait) {
 		return;
 	}
