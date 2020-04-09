@@ -23,24 +23,24 @@ plats.qc
 misc.qc
 lights.qc //c0burn's excellent switchable lights
 
-ogre.qc
-demon.qc
-shambler.qc
-knight.qc
-soldier.qc
-wizard.qc
-dog.qc
-zombie.qc //modified version of Ace_Dave's zombies from Rubicon2 source
-boss.qc
-boss2.qc // killable Chthon
+monsters/ogre.qc
+monsters/demon.qc
+monsters/shambler.qc
+monsters/knight.qc
+monsters/soldier.qc
+monsters/wizard.qc
+monsters/dog.qc
+monsters/zombie.qc //modified version of Ace_Dave's zombies from Rubicon2 source
+monsters/boss.qc
+monsters/boss2.qc // killable Chthon
 
-tarbaby.qc		// registered
-hknight.qc		// registered
-fish.qc			// registered
-shalrath.qc		// registered
-enforcer.qc		// registered
-oldone.qc		// registered
-oldone2.qc		// killable Shub 
+monsters/tarbaby.qc		// registered
+monsters/hknight.qc		// registered
+monsters/fish.qc			// registered
+monsters/shalrath.qc		// registered
+monsters/enforcer.qc		// registered
+monsters/oldone.qc		// registered
+monsters/oldone2.qc		// killable Shub 
 
 dtmisc.qc // sound code from Hipnotic & Rubicon Rumble and misc visual effects
 math.qc // Code by Joshua Skelton
