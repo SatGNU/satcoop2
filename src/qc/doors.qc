@@ -35,9 +35,10 @@ void() door_blocked =
 
 // if a door has a negative wait, it would never come back if blocked,
 // so let it just squash the object to death real fast
+// satcoop: you can also force door to close by setting a dmg val >= 1000
 	if (self.wait >= 0)
 	{
-		if (self.state == STATE_DOWN)
+		if (self.state == STATE_DOWN && self.dmg < 1000)
 			door_go_up ();
 		else
 			door_go_down ();
