@@ -566,6 +566,7 @@ void() PutClientInServer =
 	self.wantedgravity = 0;
 	self.onladder = 0;
 	self.customkeys = 0;  // support for item_key_custom -- iw
+	self.p_id = gamestatemanager.takeNextFreePlayerId();
 
 	DecodeLevelParms ();
 
@@ -1321,6 +1322,8 @@ void() ClientDisconnect =
 		return;
 	// if the level end trigger has been activated, just return
 	// since they aren't *really* leaving
+
+	gamestatemanager.freePlayerId(self.p_id);
 
 	// let everyone else know
 	bprint (self.netname);

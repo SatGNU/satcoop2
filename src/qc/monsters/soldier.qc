@@ -271,12 +271,13 @@ void() monster_army =
 	self.solid = SOLID_SLIDEBOX;
 	self.movetype = MOVETYPE_STEP;
 
+	if (!self.health) //thanks RennyC -- dumptruck_ds
+		self.health = 30;
+
 	setmodel (self, "progs/soldier.mdl");
 
-	setsize (self, '-16 -16 -24', '16 16 40');
+	setsize (self, '-16 -16 -24', '16 16 30');
 
-	if (!self.health) //thanks RennyC -- dumptruck_ds
-	self.health = 30;
 
 	self.th_stand = army_stand1;
 	self.th_walk = army_walk1;
@@ -287,6 +288,8 @@ void() monster_army =
 	else
 	self.th_pain = SUB_NullPain;
 	self.th_die = army_die;
+
+	setup_monster_tier(self);
 
 	walkmonster_start ();
 };

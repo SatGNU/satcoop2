@@ -822,4 +822,14 @@ void() SUB_UsePain; //dumptruck_ds
 .float berserk; //dumptruck_ds
 
 /* ==== SATCOOP ==== */
-.void(entity e, entity player) oninteract;
+#define EOL "\n" // my current keyboard doesnt have a backslash and im lazy
+
+class GameStateManager;
+GameStateManager gamestatemanager;
+
+.void(entity e, entity player) oninteract; // Function called on interact from player
+
+.float m_tier; // Monster tier
+
+.float p_id; // Player id value, used for triggers etc
+.float slot_id; // Used by map entities, this is the player ID slot that can interact with this entity

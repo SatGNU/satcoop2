@@ -735,9 +735,16 @@ void() player_interact =
 	makevectors (self.v_angle);
 	local vector source = (self.origin + '0 0 24');
 	traceline (source, source + v_forward*64, FALSE, self);
+
 	if (trace_fraction != 1.0)
 	{
 		if (trace_ent.oninteract) {
+			if(trace_ent.slot_id != 0) {
+				if(trace_ent.slot_id != self.p_id) {
+					return;
+				}
+			}
+
 			activator = self;
 			trace_ent.oninteract(trace_ent, self);
 		}

@@ -197,7 +197,15 @@ void() monster_pain_use =
 
 void() walkmonster_start_go =
 {
-	self.origin_z = self.origin_z + 1;	// raise off floor a bit
+	float i = 0;
+	float max = 10; // Max Attempts to shift model to fit
+
+	while(!walkmove(0, 0) && i < max) {
+		i++;
+		self.origin_z = self.origin_z + 1;	// raise off floor a bit
+		droptofloor();
+	}
+
 //Preach's "check" here
 
 // if(time <= 0.5)
@@ -438,3 +446,30 @@ void() swimmonster_start =
 	self.think = swimmonster_start_go;
 	total_monsters = total_monsters + 1;
 };
+
+float() get_random_monster_tier =
+{
+	float val = random() * 100;
+
+	float tier = 0;
+	if(val >= 60) {
+		tier = 1;
+	}
+	if(val >= 90) {
+		tier = 2;
+	}
+
+	return tier;
+}
+
+void(entity monster) setup_monster_tier = 
+{
+	monster.m_tier = get_random_monster_tier();
+
+	// Scale monster Z by tier
+	monster.scale = 1 + (monster.m_tier * 0.1);
+	vector v_scale = '0 0 0';
+	v_scale_z = fabs(monster.mins_z) * (monster.scale-1);
+	monster.origin_z = monster.origin_z + v_scale_z; // Shift up
+	setsize(monster, monster.mins - v_scale, monster.maxs);
+}

@@ -406,6 +406,7 @@ void() monster_hell_knight =
 		remove(self);
 		return;
 	}
+
 	precache_model2 ("progs/hknight.mdl");
 	precache_model2 ("progs/k_spike.mdl");
 	precache_model2 ("progs/h_hellkn.mdl");
@@ -425,6 +426,8 @@ void() monster_hell_knight =
 
 	self.solid = SOLID_SLIDEBOX;
 	self.movetype = MOVETYPE_STEP;
+
+	setup_monster_tier(self);
 
 	setmodel (self, "progs/hknight.mdl");
 

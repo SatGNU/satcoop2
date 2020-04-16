@@ -3,6 +3,7 @@
 fteextensions.qc
 
 defs.qc //added fields, see comments for details
+gamestate.qc
 newflags.qc //new spawnflags for all entities
 subs.qc //modified targets, triggers and killtargets
 fight.qc
