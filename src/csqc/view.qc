@@ -3,6 +3,15 @@ void(vector pos, float value, float threshhold) Hud_DrawLargeValue;
 
 void(float width, float height, float menushown) CSQC_UpdateView =
 {
+	if(con_size_x == 0 || con_size_y == 0) {
+		con_size = (vector)getviewprop(VF_SCREENVSIZE);
+
+		if(con_size_x == 0 || con_size_y == 0) {
+			con_size_x = 1280;
+			con_size_y = 720;
+		}
+	}
+
 	clearscene();					//wipe entity lists. reset view properties to their defaults.
 	setviewprop(VF_DRAWENGINESBAR, 0);		//draw a status bar (or hud or whatever the engine normally does) around the screen.
 	setviewprop(VF_DRAWCROSSHAIR, 1);		//draw a crosshair in the middle of the screen.
@@ -16,13 +25,14 @@ void(float width, float height, float menushown) CSQC_UpdateView =
 	addentities((intermission?0:MASK_VIEWMODEL)|MASK_ENGINE);	//add various entities to the scene's lists.
 	renderscene();					//draw the scene to the screen using the various properties.
 
-	Hud_Draw([848, 480]); // ????? it puts the bar in the middle of dur screen
+	Hud_Draw(con_size); // ????? it puts the bar in the middle of dur screen
 };
 
 float stitems, stitems2, stweapon;
 void Hud_Draw(vector scrsz)
 {
-	vector pos = [(scrsz_x-320)/2, pos_y = scrsz_y - 24, 0];	//calculate the top-left of the sbar, assuming it is 320 units wide and placed in the bottom-middle of the screen
+	vector pos = [(scrsz_x-320)/2, scrsz_y - 24, 0];
+
 	//get some commonly refered to values
 	stitems = getstatbits(STAT_ITEMS, 0, 23);			//this is the player's self.items value (STAT_ITEMS is generated specially by the server)
 	stitems2 = getstatbits(STAT_ITEMS, 23, 9);			//this is the player's self.items2 value if it exists, otherwise it is the serverflags global

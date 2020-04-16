@@ -1240,6 +1240,7 @@ PlayerPostThink
 Called every frame after physics are run
 ================
 */
+void() player_check_crosshair;
 void() PlayerPostThink =
 {
 
@@ -1247,6 +1248,8 @@ void() PlayerPostThink =
 		return;		// intermission or finale
 	if (self.deadflag)
 		return;
+
+	player_check_crosshair();
 
 // do weapon stuff
 

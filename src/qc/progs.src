@@ -1,8 +1,10 @@
 ../../progs.dat
 
 fteextensions.qc
-
 defs.qc //added fields, see comments for details
+../shared/defs.qc
+../shared/packetdefs.qc
+
 gamestate.qc
 newflags.qc //new spawnflags for all entities
 subs.qc //modified targets, triggers and killtargets

@@ -2,4 +2,8 @@
 
 ftesysdefs.qc
 defs.qc
+../shared/defs.qc
+../shared/packetdefs.qc
+
+netcode.qc
 view.qc

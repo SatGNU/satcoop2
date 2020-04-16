@@ -18,7 +18,6 @@ class GameStateManager
         // Always flush player ids
         for(float i=0; i<PID_POOL_LEN; i++) {
             sc_gamestate.pid_slots[i] = 0;
-            dprint("Out of bounds?? ", ftos(i), EOL);
         }
     };
 
@@ -70,8 +69,8 @@ class GameStateManager
     nonvirtual void(float id) freePlayerId =
     {
         id--;
-        if(id<0) {
-            return; // Safety, but should never happen
+        if(id<0 || id>=PID_POOL_LEN) {
+            return; // Bounds sanity check, should be impossible
         }
 
         sc_gamestate.pid_slots[id] = 0;

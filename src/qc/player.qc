@@ -730,11 +730,17 @@ void() player_dead_on_side =
 };
 /* END Scenic Dead Monster Patch stuff here from DeadStuff mod -- dumptruck_ds */
 
+/**
+ * Impulse function called when a player interacts with an interactable
+ */
+
+float INTERACT_RANGE = 64;
+
 void() player_interact = 
 {
 	makevectors (self.v_angle);
 	local vector source = (self.origin + '0 0 24');
-	traceline (source, source + v_forward*64, FALSE, self);
+	traceline (source, source + v_forward*INTERACT_RANGE, FALSE, self);
 
 	if (trace_fraction != 1.0)
 	{
@@ -748,5 +754,61 @@ void() player_interact =
 			activator = self;
 			trace_ent.oninteract(trace_ent, self);
 		}
+	}
+}
+
+/**
+ * CSQC communication function to send new crosshair
+ * @param crosshair - new crosshair enum
+ */
+void(float crosshair) player_update_crosshair =
+{
+	self.crosshair_state = crosshair;
+	msg_entity = self;
+
+	WriteByte(MSG_MULTICAST, SVC_CGAMEPACKET);
+	WriteByte (MSG_MULTICAST, PACKET_SC_XHAIR);
+	WriteByte (MSG_MULTICAST, crosshair);
+
+	multicast (self.origin, MULTICAST_ONE_R);
+}
+
+/**
+ * This function is called every updateframe for players, has logic
+ * to decide which crosshair the client should show depending on what they're looking at
+ */
+void() player_check_crosshair =
+{
+	makevectors (self.v_angle);
+	local vector source = (self.origin + '0 0 24');
+	float old_state = self.crosshair_state;
+	float new_state = CROSSHAIR_NORMAL;
+
+	/* First we check for nearby interactables */
+	traceline (source, source + v_forward*INTERACT_RANGE, FALSE, self);
+	if (trace_fraction != 1.0)
+	{
+		if (trace_ent.oninteract) {
+			new_state = CROSSHAIR_INTERACT;
+
+			if(trace_ent.slot_id != 0) {
+				if(trace_ent.slot_id != self.p_id) {
+					new_state = CROSSHAIR_NORMAL;
+				}
+			}
+
+			if(new_state != old_state) {
+				player_update_crosshair(new_state);
+			}
+
+			return;
+		}
+	}
+
+	/* TODO we can also do a longer trace and check if we're aiming at
+	 * friendlies/enemies and change crosshair to red/green maybe? */
+
+	 if(new_state != old_state) {
+		player_update_crosshair(new_state);
 	}
 }
