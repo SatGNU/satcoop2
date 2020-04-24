@@ -3158,4 +3158,11 @@ accessor filestream : float
 	inline set string = {fputs(this,value);};
 };
 #endif
+
+
+
+/* === HAX ADDED BY SATCOOP === */
+void(float cluster_id, string mapname) sc_clustermap = #0:sc_clustermap; // Code to spawn a cluster mode node
+
+
 #pragma noref 0

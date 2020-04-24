@@ -319,6 +319,17 @@ void() changelevel_touch =
 		return;
 	}
 
+	if(self.cluster_id > 0) {
+		if(other.transferring) {
+			return;
+		}
+
+		sprint(other, "Transferring to dim ", ftos(self.cluster_id+1), "\n");
+		clustertransfer(other, strcat(ftos(self.cluster_id+1), ":", self.map));
+		other.transferring = TRUE;
+		return;
+	}
+
 	if (coop || deathmatch)
 	{
 		bprint (other.netname);

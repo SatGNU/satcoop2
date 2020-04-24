@@ -1316,6 +1316,9 @@ void() ImpulseCommands =
 		CycleWeaponReverseCommand ();
 	if (self.impulse == 50)
 		player_interact();
+	if(self.impulse == 51) {
+		clustertransfer(self, "1:newbase"); // FIXME
+	}
 
 	if (self.impulse == 255)
 		QuadCheat ();

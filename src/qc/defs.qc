@@ -831,5 +831,7 @@ GameStateManager gamestatemanager;
 
 .float p_id; // Player id value, used for triggers etc
 .float slot_id; // Used by map entities, this is the player ID slot that can interact with this entity
+.float cluster_id; // Used by map entities. Allows a trigger to select a specific shard ID
+.float transferring; // used for shard transitions to tell if the player is already transferring between nodes
 
 .float crosshair_state; // Current xhair, see shared defs enum

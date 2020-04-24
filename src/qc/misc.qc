@@ -1130,3 +1130,23 @@ void() func_interact =
 	self.classname = "func_interact";
 	self.oninteract = func_interact_oninteract;
 }
+
+// temporary
+void(entity e, entity player) func_changemap_oninteract =
+{
+	// 1 is always the homebase map, but we let mappers count from 1
+	float cid = e.cluster_id+1;
+	sc_clustermap(cid, e.map);
+
+	bprint("Resetting map on dimension ", ftos(cid), "\n");
+}
+
+void() func_changemap =
+{
+	self.solid = SOLID_BSP;
+	self.movetype = MOVETYPE_PUSH;
+	setorigin (self, self.origin);	
+	setmodel (self, self.model);
+	self.classname = "func_changemap";
+	self.oninteract = func_changemap_oninteract;
+}
