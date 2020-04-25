@@ -1317,7 +1317,11 @@ void() ImpulseCommands =
 	if (self.impulse == 50)
 		player_interact();
 	if(self.impulse == 51) {
-		clustertransfer(self, "1:newbase"); // FIXME
+		if(!sc_is_subserver()) {
+			sprint (self, "not running in cluster mode.\n");
+		} else {
+			clustertransfer(self, "1:newbase"); // FIXME
+		}
 	}
 
 	if (self.impulse == 255)

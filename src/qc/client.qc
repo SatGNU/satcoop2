@@ -319,7 +319,7 @@ void() changelevel_touch =
 		return;
 	}
 
-	if(self.cluster_id > 0) {
+	if(self.cluster_id > 0 && sc_is_subserver()) { // If we're a shard tp, and we're running in cluster mode
 		if(other.transferring) {
 			return;
 		}
